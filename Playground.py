@@ -41,20 +41,14 @@ pygame.display.set_caption('Soccer Pong Game')
 half_width, half_height = screen_width // 2, screen_height // 2
 
 
-class PlayerCircle:
+# Draws a circle on the screen
+class Circle:
     def __init__(self, pos_x, pos_y, circle_color, player_size):
         self.pos_x, self.pos_y = pos_x, pos_y
         self.color, self.size = circle_color, (player_size if type(player_size) is int else 0)
 
-    def draw(self):
-        if self.color is PAGE_COLOR:
-            self.color = WHITE if PAGE_COLOR is BLACK else BLACK
-            return pygame.draw.ellipse(screen, self.color, pygame.Rect(self.pos_x, self.pos_y, self.size, self.size), 5)
-
-        return pygame.draw.circle(screen, self.color, (self.pos_x, self.pos_y), self.size)
-
-    def drawCircle(self):
-        return pygame.draw.ellipse(screen, self.color, pygame.Rect(self.pos_x, self.pos_y, self.size, self.size), 3)
+    def draw(self, size=0):
+        return pygame.draw.circle(screen, self.color, (self.pos_x, self.pos_y), self.size, size)
 
 
 class GoalPost:
@@ -66,8 +60,8 @@ class GoalPost:
         pygame.draw.rect(screen, self.color, self.object)
 
 
-player1 = PlayerCircle(half_width * .35, half_height * .95, WHITE, 25)
-player2 = PlayerCircle(screen_width * .8, half_height * .95, GREEN, 25)
+player1 = Circle(half_width * .35, half_height * .95, WHITE, 25)
+player2 = Circle(screen_width * .8, half_height * .95, GREEN, 25)
 
 
 def isPressed(obj):
@@ -151,7 +145,7 @@ def makeOptions(players_color):
     for num in range(2):
         for color_choice in [LIGHT_GREY, RED, GREEN, WHITE, BLACK]:
             if color_choice not in players_color:
-                new_player = PlayerCircle((screen_width * prob) + space - 150, screen_height * .7, color_choice, 15)
+                new_player = Circle((screen_width * prob) + space - 150, screen_height * .7, color_choice, 15)
                 playersOption[num].append(new_player)
                 space += 50
         prob = 1 - prob
@@ -273,7 +267,7 @@ def displayLayout(ball):
     displayGoalSides(line_pos)
 
     # Draws the circle of the field
-    PlayerCircle(half_width - size, half_height - size, WHITE, size * 2).drawCircle()
+    Circle(half_width, half_height, WHITE, size * 2).draw(3)
 
     displayTime()
     displayScore()
@@ -311,7 +305,7 @@ def addNewPlayer(side, player_color):
         # Adds to the list the new player
         player = soccer_player.value
         # Uses same size, color and its specific position
-        res.append(PlayerCircle(player[0], player[1], player_color, circle_size))
+        res.append(Circle(player[0], player[1], player_color, circle_size))
     return res
 
 
@@ -322,6 +316,8 @@ def displayAllPlayers():
     left_side, right_side = SoccerTeamPlayers.StartPositionLeft, SoccerTeamPlayers.StartPositionRight
     left_side_color, right_side_color = player1.color, player2.color
 
+    # Player01 = SoccerTeamPlayers.Team(left_side, player1.color, )
+
     # Displays the players on the screen for Both Side
     return [addNewPlayer(left_side, left_side_color), addNewPlayer(right_side, right_side_color)]
 
@@ -331,7 +327,7 @@ def MainGame():
     StartUp()
 
     # Game Rectangles
-    ball = PlayerCircle(half_width, half_height, RED, 20)
+    ball = Circle(half_width, half_height, RED, 20)
 
     # ! Draws the goal post on both sides on the field
     goal_xpos, goal_ypos = 10, half_height - 70

@@ -1,9 +1,6 @@
 from enum import Enum
 import keyboard
 import pygame
-
-# import Gameplay
-# import ScreenCreation
 import Playground
 
 
@@ -51,15 +48,15 @@ class StartPositionLeft(Enum):
 
 # Creates one team (Max = 2)
 class Team:
-    def __init__(self, team, team_name, color, side):
+    def __init__(self, color, side):
         self.players = []
-        self.team, self.team_name = Teams(team), team_name
-        self.color, self.side = color, FieldSide(side) # Cast as FieldSide
+        self.color, self.side = color, FieldSide(side)  # Cast as FieldSide
+        self.team = {StartPositionLeft: Teams.TEAM_ONE, StartPositionRight: Teams.TEAM_TWO}.get(side)
         self.numberOfPlayers = 5
 
         # Creates the number of players (initializes)
         for x in range(0, self.numberOfPlayers):
-            self.players.append(Player(team, 1 + x, States.WAITING, StartPositionLeft.FORWARD))  # ?: Speed
+            self.players.append(Player(self.team, 1 + x, States.WAITING, StartPositionLeft.FORWARD))  # ?: Speed
 
 
 class Player:
