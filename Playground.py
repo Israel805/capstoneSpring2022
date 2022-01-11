@@ -9,6 +9,7 @@ PAGE_COLOR = BLACK = (0, 0, 0)
 LIGHT_GREY = (200, 200, 200)
 RED = (255, 0, 0)
 GREEN = (0, 255, 0)
+allColors = [LIGHT_GREY, RED, GREEN, WHITE, BLACK]
 
 pygame.init()
 clock = pygame.time.Clock()
@@ -49,6 +50,11 @@ class Circle:
 
     def draw(self, size=0):
         return pygame.draw.circle(screen, self.color, (self.pos_x, self.pos_y), self.size, size)
+
+    def moveBall(self, direction, velocity):
+        while inBounds(self) and velocity > 0:
+            direction += velocity
+            velocity -= 1
 
 
 class GoalPost:
@@ -120,6 +126,16 @@ def playerControlMovement(teams, player_num=0):
         player.pos_y += vel
 
 
+def isGoal():
+    global ball, goal_posts
+
+    for index in range(len(goal_posts)):
+        if goal_posts[index].object.collidepoint(ball.pos_x, ball.pos_y):
+            score[(index + 1) % 1] += 1
+
+    MainGame()  # Should restart the original position
+
+
 def inBounds(ply):
     return ply.size < ply.pos_x < screen_width - ply.size and \
            ply.size < ply.pos_y < screen_height - ply.size
@@ -138,35 +154,40 @@ def inBounds(ply):
 #         direction = -direction
 
 
-def makeOptions(players_color):
+playersOption = allColors
+# Removes the color already chosen by each player
+playersOption.remove(player1.color)
+playersOption.remove(player2.color)
+
+
+def makeOptions():
+    # Collects all the colors available
+    result, space = [], .4
+    for color_choice in playersOption:
+        new_player = Circle((half_width + space - 15, screen_height * .7), color_choice, 15)
+        result.append(new_player)
+        space += 50
+
+    return result
+
+
+def OptionPage():
+    screen.fill(PAGE_COLOR)  # Clears the screen
+
+
+def displayOptions():
     global player1, player2
-    playersOption, space = [[], []], 0
-    prob = .25
-    for num in range(2):
-        for color_choice in [LIGHT_GREY, RED, GREEN, WHITE, BLACK]:
-            if color_choice not in players_color:
-                new_player = Circle((screen_width * prob) + space - 150, screen_height * .7, color_choice, 15)
-                playersOption[num].append(new_player)
-                space += 50
-        prob = 1 - prob
+    for other_colors in makeOptions():
+        color = other_colors.draw()
+        # Makes sure its pressed and swaps the
+        if isPressed(color):
+            if isPressed(player1.draw()):
+                player1.color, other_colors = other_colors, player1.color
+                print("Player 1 changed with " + other_colors)
 
-    return playersOption
-
-
-def displayOptions(array_option):
-    global player1, player2
-
-    for other_colors in array_option:
-        for c in other_colors:
-            color = c.draw()
-            # Makes sure its pressed and swaps the
-            if isPressed(color):
-                if array_option.index(other_colors) == 0:
-                    player1.color, other_colors[other_colors.index(c)] = \
-                        other_colors[other_colors.index(c)], player1.color
-                else:
-                    player2.color, other_colors[other_colors.index(c)] = \
-                        other_colors[other_colors.index(c)], player2.color
+            if isPressed(player2.draw()):
+                player2.color, other_colors = other_colors, player2.color
+                print("Player 2 changed with " + other_colors)
 
 
 def displayPlayerTitle():
@@ -178,19 +199,77 @@ def displayPlayerTitle():
     screen.blit(default_label("Player 02"), cir_size)
 
 
-def displayStartPage(arr):
+def displayStartPage():
     global player1, player2
     screen.fill(PAGE_COLOR)
     screen.blit(default_label("Welcome to Retro Soccer", 40), (half_width * 0.55, 30))
     player1.draw()
-    displayOptions(arr)
+    displayOptions()
     player2.draw()
 
 
 def StartPage():
     global player1, player2
-    options = makeOptions([player1.color, player2.color])
 
+    # Creates a new button for the start button
+    button_width, button_height = half_width * .85, screen_height * .8
+    button_vert, button_horiz = 50, 150
+    play_button = pygame.Rect(button_width, button_height, button_horiz, button_vert)
+    option_button = pygame.Rect(button_width, button_height + 50, button_horiz, button_vert)
+
+    while True:
+
+        # Handling input
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+        # If clicked on the button, it will start the game
+        if isPressed(play_button):
+            MainGame()
+        if isPressed(option_button):
+            OptionPage()
+
+        displayStartPage()
+
+        # Draws the rectangle button
+        pygame.draw.rect(screen, WHITE, play_button)
+        # Creates a text to go with the button
+        play_label = default_label("Play", font_color=BLACK)
+        screen.blit(play_label, (half_width * .95, button_height))
+
+        pygame.display.flip()
+
+
+def GameOverPage():
+    screen.fill(PAGE_COLOR)  # Clears the screen
+    screen.blit(default_label("GAME OVER!", 100), (half_width, half_height))
+
+    GameResult()
+
+
+def displayScoreFinal():
+    screen.blit(default_label("Player 1", 200), (20, half_height))
+    screen.blit(default_label(str(score[0]), 200), (20, half_height * 1.05))
+    screen.blit(default_label("-", 200), (20, half_height * 1.05))
+    screen.blit(default_label("Player 2", 200), (screen_width - 20, half_height))
+    screen.blit(default_label(str(score[1]), 200), (20, half_height * 1.05))
+
+
+def chooseWinner():
+    if score[0] == score[0]:
+        screen.blit(default_label("Draw", 200), (half_width, 50))
+    else:
+        screen.blit(default_label("Winner", 200), (half_width, 50))
+        screen.blit(default_label("Player 1" if score[0] > score[1] else "Player 2", 300), (half_width, 150))
+
+    displayScoreFinal()
+
+
+def GameResult():
+    screen.fill(PAGE_COLOR)  # Clears the screen
+    chooseWinner()
     # Creates a new button for the start button
     button_width, button_height = half_width * .85, screen_height - 145
     button_vert, button_horiz = 50, 150
@@ -206,22 +285,13 @@ def StartPage():
 
         # If clicked on the button, it will start the game
         if isPressed(button):
-            MainGame()
-
-        displayStartPage(options)
+            return
 
         # Draws the rectangle button
         pygame.draw.rect(screen, WHITE, button)
         # Creates a text to go with the button
-        play_label = default_label("Play", font_color=BLACK)
+        play_label = default_label("Continue", font_color=BLACK)
         screen.blit(play_label, (half_width * .95, button_height))
-
-        pygame.display.flip()
-
-
-def GameOverPage():
-    screen.fill(PAGE_COLOR)  # Clears the screen
-    screen.blit(default_label("GAME OVER!", 100), (half_width, half_height))
 
 
 def ScoreBoard():
