@@ -79,25 +79,62 @@ def isPressed(obj):
 
 
 class CheckMovement:
-    def __init__(self, team, player):
-        self.keys, soccer = pygame.key.get_pressed(), SoccerTeamPlayers.Teams
-        self.player = player
+    def __init__(self, position, size):
+        self.position, self.size = position, size
+
+    def isLeftBound(self):
+        return self.position[0] > self.size
+
+    def isRightBound(self):
+        return self.position[0] < screen_width - self.size
+
+    def isUpperBound(self):
+        return self.position[1] > 75 + self.size
+
+    def isLowerBound(self):
+        return self.position[1] < screen_height - self.size
+
+
+class CheckPlayerMovement(CheckMovement):
+    def __init__(self, team, player, vel):
+        super().__init__(player.position, player.size)
+        self.keys = pygame.key.get_pressed()
+        self.velocity = vel
+        self.player, soccer = player, SoccerTeamPlayers.Teams
         self.player_key = {
             soccer.TEAM_ONE: [pygame.K_LEFT, pygame.K_RIGHT, pygame.K_UP, pygame.K_DOWN],
             soccer.TEAM_TWO: [pygame.K_a, pygame.K_d, pygame.K_w, pygame.K_s]
         }.get(team)
 
-    def isLeftBound(self):
-        return self.keys[self.player_key[0]] and self.player.position[0] > self.player.size
+    def moveLeft(self):
+        if self.keys[self.player_key[0]] and self.isLeftBound():
+            self.position[0] -= self.velocity
 
-    def isRightBound(self):
-        return self.keys[self.player_key[1]] and self.player.position[0] < screen_width - self.player.size
+    def moveRight(self):
+        if self.keys[self.player_key[1]] and self.isRightBound():
+            self.position[0] += self.velocity
 
-    def isUpperBound(self):
-        return self.keys[self.player_key[2]] and self.player.position[1] > 75 + self.player.size
+    def moveUp(self):
+        if self.keys[self.player_key[2]] and self.isUpperBound():
+            self.position[1] -= self.velocity
 
-    def isLowerBound(self):
-        return self.keys[self.player_key[3]] and self.player.position[1] < screen_height - self.player.size
+    def moveDown(self):
+        if self.keys[self.player_key[3]] and self.isLowerBound():
+            self.position[1] += self.velocity
+
+
+def moveAllDirections(self):
+    # The outer circle doesnt touch the left side, increment in x coordinate
+    self.moveLeft()
+
+    # Only to the right of the screen, decrement in x coordinate
+    self.moveRight()
+
+    # If below the scoreboard, increment in y coordinate
+    self.moveUp()
+
+    # if down arrow key is pressed, decrement in y coordinate
+    self.moveDown()
 
 
 # Uses the team their on and which player player one has control
@@ -107,27 +144,7 @@ def playerControlMovement(teams, player_num=0):
 
     # Gets the correct circle and controls from the team side chosen
     player = {soccer.TEAM_ONE: playerCircleR, soccer.TEAM_TWO: playerCircleL}.get(teams)[player_num]
-    check = CheckMovement(teams, player)
-
-    # if left arrow key is pressed and the outer circle doesnt touch the left side
-    if check.isLeftBound():
-        # increment in x co-ordinate
-        player.position[0] -= vel
-
-    # if right arrow key is pressed and only to the right of the screen
-    if check.isRightBound():
-        # increment in x co-ordinate
-        player.position[0] += vel
-
-    # if up arrow key is pressed
-    if check.isUpperBound():
-        # decrement in y co-ordinate
-        player.position[1] -= vel
-
-    # if down arrow key is pressed
-    if check.isLowerBound():
-        # increment in y co-ordinate
-        player.position[1] += vel
+    moveAllDirections(CheckPlayerMovement(teams, player, vel))
 
 
 def isGoal():
@@ -314,7 +331,7 @@ def displayScore():
     # ! Update scores
     # Displays the score board for both teams
     display_setup = ["Player 1", str(score[0]), "-", str(score[1]), "Player 2"]
-    spacing, position = [200, 50, 50, 150, 0], [half_width - 250, 20]
+    spacing, position = [150, 25, 25, 125, 0], [half_width - 250, 20]
     index = 0
     for score_setup in display_setup:
         screen.blit(default_label(score_setup), position)
@@ -412,14 +429,15 @@ def addNewPlayer(side, player_color):
 
 
 def initializeTeams():
-    global player1, player2
+    global player1, player2, playerCircleL, playerCircleR
 
     # ! Creates the players on the screen
     left_side, right_side = SoccerTeamPlayers.StartPositionLeft, SoccerTeamPlayers.StartPositionRight
     left_side_color, right_side_color = player1.color, player2.color
 
     # Displays the players on the screen for Both Side
-    return [addNewPlayer(left_side, left_side_color), addNewPlayer(right_side, right_side_color)]
+    # Saves and displays the players on both sides
+    playerCircleL, playerCircleR = addNewPlayer(left_side, left_side_color), addNewPlayer(right_side, right_side_color)
 
 
 # Game Rectangles
@@ -431,17 +449,19 @@ def Main():
     MainGame()
 
 
+# TODO
+def CheckCollide():
+    global ball
+
+
 def MainGame():
     global playerCircleL, playerCircleR
-
-    # Saves and displays the players on both sides
-    playerCircleL, playerCircleR = initializeTeams()
+    initializeTeams()
 
     while True:
 
         # Handling input
         for event in pygame.event.get():
-
             if event.type == pygame.USEREVENT:
                 global counter
                 counter -= 1
@@ -454,10 +474,20 @@ def MainGame():
                 sys.exit()
 
         soccer = SoccerTeamPlayers.Teams
+        p1_num = p2_num = 1
 
-        playerControlMovement(soccer.TEAM_ONE, 1)
-        playerControlMovement(soccer.TEAM_TWO, 1)
-        # robotMovement(soccer.TEAM_ONE)
+        # TODO: Switches the player as it is pressed
+        if pygame.key.get_pressed()[K_p]:
+            p1_num = (p1_num + 1) % len(playerCircleL)
+
+        if pygame.key.get_pressed()[K_q]:
+            p2_num = (p2_num + 1) % len(playerCircleR)
+
+        playerControlMovement(soccer.TEAM_ONE, p1_num)
+        playerControlMovement(soccer.TEAM_TWO, p2_num)
+        # robotMovement(soccer.TEAM_ONE) # For AI
+
+        CheckCollide()
 
         # Visuals
         screen.fill(PAGE_COLOR)
