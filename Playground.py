@@ -59,14 +59,6 @@ class Player(Circle):
         self.team = team
 
 
-# class Drawing:
-#     def __init__(self, draw_color, draw_object):
-#         self.color, self.object = draw_color, draw_object
-#
-#     def draw(self):
-#         pygame.draw.rect(screen, self.color, self.object)
-
-
 class GoalPost:
     def __init__(self, goal_line, circle_color):
         self.color, goal_size = circle_color, [10, 150]
@@ -112,8 +104,8 @@ class CheckPlayerMovement(CheckMovement):
         self.velocity = vel
         self.player, soccer = player, SoccerTeamPlayers.Teams
         self.player_key = {
-            soccer.TEAM_ONE: [pygame.K_LEFT, pygame.K_RIGHT, pygame.K_UP, pygame.K_DOWN],
-            soccer.TEAM_TWO: [pygame.K_a, pygame.K_d, pygame.K_w, pygame.K_s]
+            soccer.TEAM_ONE: [pygame.K_a, pygame.K_d, pygame.K_w, pygame.K_s],
+            soccer.TEAM_TWO: [pygame.K_LEFT, pygame.K_RIGHT, pygame.K_UP, pygame.K_DOWN]
         }.get(team)
 
     def moveLeft(self):
@@ -164,43 +156,43 @@ def getTeam(team):
     global right_team, left_team
     soccer = SoccerTeamPlayers.Teams
     # returns the playerCircle for each team
-    return {soccer.TEAM_ONE: right_team,
-            soccer.TEAM_TWO: left_team}.get(team)
+    return {soccer.TEAM_ONE: left_team,
+            soccer.TEAM_TWO: right_team}.get(team)
 
 
 # Uses the team their on and which player player one has control
-def playerControlMovement(teams):
+def playerControlMovement(play_team, teams):
     global p1_num, p2_num
     # stores keys pressed
     vel = 5
 
     # Creates a boost for the each player's velocity
     if pygame.key.get_pressed()[K_p] or pygame.key.get_pressed()[K_q]:
-        vel = vel * 1.5
+        vel = vel * 1.25
 
     soccer = SoccerTeamPlayers.Teams
     # Gets the correct circle and controls from the team side chosen
-    num = {soccer.TEAM_ONE: p1_num, soccer.TEAM_TWO: p2_num}.get(teams)
-    moveAllDirections(CheckPlayerMovement(teams, getTeam(teams)[num], vel))
+    num = {soccer.TEAM_ONE: p1_num, soccer.TEAM_TWO: p2_num}.get(play_team)
+    moveAllDirections(CheckPlayerMovement(play_team, teams[num], vel))
 
 
 def robotMovement(team):  # TODO
     global ball
-    players_team, place = getTeam(team), 0
+    place = 0
     # For defense
     position = SoccerTeamPlayers.MovingPosition.DEFENSE
     for x in range(position.value):
-        playingDefense(players_team, place)
+        playingDefense(team, place)
         place += 1
 
     # For middle
     for x in range(position.value):
-        playingMiddle(players_team, place)
+        playingMiddle(team, place)
         place += 1
 
     # For forward
     for x in range(position.value):
-        playingOffense(players_team, place)
+        playingOffense(team, place)
         place += 1
 
 
@@ -582,8 +574,9 @@ def MainGame():
                 sys.exit()
 
         soccer = SoccerTeamPlayers.Teams
-        playerControlMovement(soccer.TEAM_ONE)
-        playerControlMovement(soccer.TEAM_TWO)
+        t1, t2 = getTeam(soccer.TEAM_ONE), getTeam(soccer.TEAM_TWO)
+        playerControlMovement(soccer.TEAM_ONE, t1)
+        playerControlMovement(soccer.TEAM_TWO, t2)
         # robotMovement(soccer.TEAM_ONE)  # For AI
         # robotMovement(soccer.TEAM_TWO)  # For AI
 
@@ -603,6 +596,7 @@ def MainGame():
 def Main():
     StartUp()
     MainGame()
+
 
 if __name__ == '__main__':
     StartPage()
