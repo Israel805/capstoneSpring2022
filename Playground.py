@@ -40,6 +40,7 @@ screen = pygame.display.set_mode((screen_width, screen_height))
 pygame.display.set_caption('Soccer Pong Game')
 half_screen = half_width, half_height = screen_width // 2, screen_height // 2
 button_size = [150, 50]
+instruct_position = [half_width * .25, 70]
 
 
 # Draws a circle on the screen
@@ -50,6 +51,12 @@ class Circle:
 
     def draw(self, size=0):  # Additional size
         return pygame.draw.circle(screen, self.color, self.position, self.size, size)
+
+
+class Player(Circle):
+    def __init__(self, team, position, circle_color):
+        super().__init__(position, circle_color)
+        self.team = team
 
 
 # class Drawing:
@@ -154,11 +161,11 @@ def playingOffense(team_playing, selected_player):
 
 
 def getTeam(team):
-    global playerCircleR, playerCircleL
+    global right_team, left_team
     soccer = SoccerTeamPlayers.Teams
     # returns the playerCircle for each team
-    return {soccer.TEAM_ONE: playerCircleR,
-            soccer.TEAM_TWO: playerCircleL}.get(team)
+    return {soccer.TEAM_ONE: right_team,
+            soccer.TEAM_TWO: left_team}.get(team)
 
 
 # Uses the team their on and which player player one has control
@@ -384,12 +391,12 @@ def displayTime():
 
 def displayGoalSides(start_point):
     # Draws the lines parallel to the goal
-    goal_line_vert = 20
-    goal_side = [goal_line_vert, start_point], [goal_line_vert, screen_width]
+    goal_line_vert, shift = 20, 8
+    goal_side = [goal_line_vert - shift, start_point], [goal_line_vert - shift, screen_width]
     pygame.draw.aaline(screen, WHITE, list(goal_side[0]), list(goal_side[1]))
 
     # Makes the first element in each list the inverse of the whole screen width
-    goal_side[0][0] = goal_side[1][0] = screen_width - goal_line_vert + 10
+    goal_side[0][0] = goal_side[1][0] = screen_width - goal_line_vert + shift
     pygame.draw.aaline(screen, WHITE, list(goal_side[0]), list(goal_side[1]))
 
 
@@ -419,15 +426,71 @@ def displayLayout():
 
 
 def displayGoalAndPlayers():
-    global playerCircleL, playerCircleR, goal_posts
+    global left_team, right_team, goal_posts
     # ! Draws the goal post, left and right players
     for goal in goal_posts:
         goal.draw()
 
-    for player_side in [playerCircleL, playerCircleR]:
+    for player_side in [left_team, right_team]:
         for player in player_side:
             player.draw()
 
+
+# def displayPlayerOneControls():
+#     screen.blit(default_label("Player One"), instruct_position)
+#     instruct_position[1] += 30
+#     screen.blit(default_label("W - move up"), instruct_position)
+#     instruct_position[1] += 30
+#     screen.blit(default_label("S - move down"), instruct_position)
+#     instruct_position[1] += 30
+#     screen.blit(default_label("A - move left"), instruct_position)
+#     instruct_position[1] += 30
+#     screen.blit(default_label("D - move right"), instruct_position)
+#     instruct_position[1] += 30
+#     screen.blit(default_label("W - boost"), instruct_position)
+#
+# def displayPlayerTwoControls():
+#     screen.blit(default_label("/ - boost"), instruct_position)
+#     instruct_position[1] -= 30
+#     screen.blit(default_label("^ - move up"), instruct_position)
+#     instruct_position[1] += 30
+#     screen.blit(default_label("v - move down"), instruct_position)
+#     instruct_position[1] += 30
+#     screen.blit(default_label("A - move left"), instruct_position)
+#     instruct_position[1] += 30
+#     screen.blit(default_label("D - move right"), instruct_position)
+#     instruct_position[1] += 30
+#     screen.blit(default_label("Player One"), instruct_position)
+#
+# def InstructionPage():
+#     screen.fill(PAGE_COLOR)
+# # Creates a new button for the start button
+#     button_pos = [half_width * .85, screen_height - 145]
+#     button = pygame.Rect(button_pos, button_size)
+#
+#     while True:
+#         # Handling input
+#         for event in pygame.event.get():
+#             if event.type == pygame.QUIT:
+#                 pygame.quit()
+#                 sys.exit()
+#
+#         # If clicked on the button, it will start the game
+#         if isPressed(button):
+#             return
+#
+#         displayPlayerOneControls()
+#         instruct_position[0] = half_width * .75
+#         displayPlayerTwoControls()
+#
+#
+#         # Draws the rectangle button
+#         pygame.draw.rect(screen, WHITE, button)
+#
+#         # Creates a text to go with the button
+#         play_label = default_label("Start", font_color=BLACK)
+#         button_pos[0] = half_width * .95
+#         screen.blit(play_label, button_pos)
 
 def StartUp():
     countDown = 3
@@ -454,19 +517,19 @@ def StartUp():
         clock.tick(60)
 
 
-def addNewPlayer(side, player_color):
+def addNewPlayer(team, side, player_color):
     res = []
     # Displays the players on the screen for Both Side
     for soccer_player in side:
         # Adds to the list the new player
         # Gets the initial value of the player
         # Uses same size, color and its specific position
-        res.append(Circle(soccer_player.value, player_color))
+        res.append(Player(team, soccer_player.value, player_color))
     return res
 
 
 def initializeTeams():
-    global player1, player2, playerCircleL, playerCircleR
+    global player1, player2, left_team, right_team
 
     # ! Creates the players on the screen
     left_side, right_side = SoccerTeamPlayers.StartPositionLeft, SoccerTeamPlayers.StartPositionRight
@@ -474,16 +537,13 @@ def initializeTeams():
 
     # Displays the players on the screen for Both Side
     # Saves and displays the players on both sides
-    playerCircleL, playerCircleR = addNewPlayer(left_side, left_side_color), addNewPlayer(right_side, right_side_color)
+    team = SoccerTeamPlayers.Teams
+    left_team, right_team = addNewPlayer(team.TEAM_ONE, left_side, left_side_color), \
+                            addNewPlayer(team.TEAM_TWO, right_side, right_side_color)
 
 
 # Game Rectangles
 ball = Circle(half_screen, RED, 20)
-
-
-def Main():
-    StartUp()
-    MainGame()
 
 
 # TODO
@@ -497,7 +557,7 @@ def CheckCollide():
 
 
 def MainGame():
-    global playerCircleL, playerCircleR, p1_num, p2_num
+    global left_team, right_team, p1_num, p2_num
     initializeTeams()
     p1_num = p2_num = 1
     # TODO: Switches the player as it is pressed
@@ -539,6 +599,10 @@ def MainGame():
         pygame.display.flip()
         clock.tick(60)
 
+
+def Main():
+    StartUp()
+    MainGame()
 
 if __name__ == '__main__':
     StartPage()

@@ -1,6 +1,4 @@
 from enum import Enum
-import keyboard
-import pygame
 import Playground
 
 
@@ -49,60 +47,3 @@ class StartPositionLeft(Enum):
 
     # BACK_TOP = (w // (1.15 * 2), h + 60)
     # BACK_BOTTOM = (w // (1.15 * 2), h - 60)
-
-
-# Creates one team (Max = 2)
-class Team:
-    def __init__(self, color, side):
-        self.players = []
-        self.color, self.side = color, FieldSide(side)  # Cast as FieldSide
-        self.team = {StartPositionLeft: Teams.TEAM_ONE, StartPositionRight: Teams.TEAM_TWO}.get(side)
-        self.numberOfPlayers = 5
-
-        # Creates the number of players (initializes)
-        for x in range(0, self.numberOfPlayers):
-            self.players.append(Player(self.team, 1 + x, States.WAITING, StartPositionLeft.FORWARD))  # ?: Speed
-
-
-class Player:
-    def __init__(self, team, number, action, place):
-        self.team = Teams(team)
-        self.number = number
-        self.action, self.place = States(action), place
-
-    def switchPlayer(self):
-        if keyboard.is_pressed(
-                "Q" if self.team == Teams.TEAM_ONE else "/"):
-            return  # closestPlayer(self)
-
-    def strike(self):
-        key, power = ' ' if self.team == Teams.TEAM_ONE else 'F', 0
-        while keyboard.is_pressed(key):
-            power += 1
-        return power
-
-    def controls(self):
-        key = ("W", "S", "A", "D") if self.team == Teams.TEAM_ONE else \
-            (pygame.K_UP, pygame.KEYDOWN, pygame.K_LEFT, pygame.K_RIGHT)
-
-        # if not Gameplay.isOffField(self.place):
-        #     if keyboard.is_pressed(key[0]):
-        #         Player.moveUp(self)
-        #     elif keyboard.is_pressed(key[1]):
-        #         Player.moveDown(self)
-        #     elif keyboard.is_pressed(key[2]):
-        #         Player.moveLeft(self)
-        #     elif keyboard.is_pressed(key[3]):
-        #         Player.moveRight(self)
-
-    def moveUp(self):
-        return self.place[self.place[0]][self.place[1] + 1]
-
-    def moveDown(self):
-        return self.place[self.place[0]][self.place[1] - 1]
-
-    def moveLeft(self):
-        return self.place[self.place[0] - 1][self.place[1]]
-
-    def moveRight(self):
-        return self.place[self.place[0] + 1][self.place[1]]
