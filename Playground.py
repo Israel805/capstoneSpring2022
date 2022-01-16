@@ -44,23 +44,26 @@ button_size = [150, 50]
 
 # Draws a circle on the screen
 class Circle:
-    def __init__(self, position, circle_color, player_size):
+    def __init__(self, position, circle_color, player_size=25):
         self.position = list(position)
-        self.color, self.size = circle_color, (player_size if type(player_size) is int else 0)
+        self.color, self.size = circle_color, player_size
 
     def draw(self, size=0):  # Additional size
         return pygame.draw.circle(screen, self.color, self.position, self.size, size)
 
-    def moveBall(self, direction, velocity):
-        while inBounds(self.size) and velocity > 0:
-            direction += velocity
-            velocity -= 1
+
+# class Drawing:
+#     def __init__(self, draw_color, draw_object):
+#         self.color, self.object = draw_color, draw_object
+#
+#     def draw(self):
+#         pygame.draw.rect(screen, self.color, self.object)
 
 
 class GoalPost:
-    def __init__(self, x_pos, y_pos, circle_color):
-        self.color, goal_position = circle_color, (10, 150)
-        self.object = pygame.Rect(x_pos, y_pos, goal_position[0], goal_position[1])
+    def __init__(self, goal_line, circle_color):
+        self.color, goal_size = circle_color, [10, 150]
+        self.object = pygame.Rect(list(goal_line), goal_size)
 
     def draw(self):
         pygame.draw.rect(screen, self.color, self.object)
@@ -71,7 +74,7 @@ player2 = Circle((screen_width * .8, half_height * .95), GREEN, 25)
 
 # ! Draws the goal post on both sides on the field
 goal_xpos, goal_ypos = 10, half_height - 70
-goal_posts = [GoalPost(goal_xpos - 8, goal_ypos, WHITE), GoalPost(screen_width - goal_xpos - 2, goal_ypos, WHITE)]
+goal_posts = [GoalPost((goal_xpos - 8, goal_ypos), WHITE), GoalPost((screen_width - goal_xpos - 2, goal_ypos), WHITE)]
 
 
 def isPressed(obj):
@@ -137,14 +140,61 @@ def moveAllDirections(self):
     self.moveDown()
 
 
-# Uses the team their on and which player player one has control
-def playerControlMovement(teams, player_num=0):
-    # stores keys pressed
-    soccer, vel = SoccerTeamPlayers.Teams, 5
+def playingDefense(team_playing, selected_player):
+    # playing_side = getTeam(team_playing)[selected_player]
+    pass
 
+
+def playingMiddle(team_playing, selected_player):
+    pass
+
+
+def playingOffense(team_playing, selected_player):
+    pass
+
+
+def getTeam(team):
+    global playerCircleR, playerCircleL
+    soccer = SoccerTeamPlayers.Teams
+    # returns the playerCircle for each team
+    return {soccer.TEAM_ONE: playerCircleR,
+            soccer.TEAM_TWO: playerCircleL}.get(team)
+
+
+# Uses the team their on and which player player one has control
+def playerControlMovement(teams):
+    global p1_num, p2_num
+    # stores keys pressed
+    vel = 5
+
+    # Creates a boost for the each player's velocity
+    if pygame.key.get_pressed()[K_p] or pygame.key.get_pressed()[K_q]:
+        vel = vel * 1.5
+
+    soccer = SoccerTeamPlayers.Teams
     # Gets the correct circle and controls from the team side chosen
-    player = {soccer.TEAM_ONE: playerCircleR, soccer.TEAM_TWO: playerCircleL}.get(teams)[player_num]
-    moveAllDirections(CheckPlayerMovement(teams, player, vel))
+    num = {soccer.TEAM_ONE: p1_num, soccer.TEAM_TWO: p2_num}.get(teams)
+    moveAllDirections(CheckPlayerMovement(teams, getTeam(teams)[num], vel))
+
+
+def robotMovement(team):  # TODO
+    global ball
+    players_team, place = getTeam(team), 0
+    # For defense
+    position = SoccerTeamPlayers.MovingPosition.DEFENSE
+    for x in range(position.value):
+        playingDefense(players_team, place)
+        place += 1
+
+    # For middle
+    for x in range(position.value):
+        playingMiddle(players_team, place)
+        place += 1
+
+    # For forward
+    for x in range(position.value):
+        playingOffense(players_team, place)
+        place += 1
 
 
 def isGoal():
@@ -161,19 +211,6 @@ def inBounds(ply):
            ply.size < ply.pos_y < screen_height - ply.size
 
 
-# def robotMovement(teams, player_num=0):  # TODO
-#     player = {
-#         SoccerTeamPlayers.Teams.TEAM_ONE: playerCircleL,
-#         SoccerTeamPlayers.Teams.TEAM_TWO: playerCircleR
-#     }.get(teams)[player_num]
-#
-#     direction = 1
-#     while True:
-#         while inBounds(player):
-#             player.pos_x += direction
-#         direction = -direction
-
-
 playersOption = allColors
 # Removes the color already chosen by each player
 playersOption.remove(player1.color)
@@ -184,7 +221,7 @@ def makeOptions():
     # Collects all the colors available
     result, space = [], .4
     for color_choice in playersOption:
-        new_player = Circle((half_width + space - 15, screen_height * .7), color_choice, 15)
+        new_player = Circle((half_width + space - 15, screen_height * .7), color_choice)
         result.append(new_player)
         space += 50
 
@@ -348,11 +385,11 @@ def displayTime():
 def displayGoalSides(start_point):
     # Draws the lines parallel to the goal
     goal_line_vert = 20
-    goal_side = [goal_line_vert - 8, start_point], [goal_line_vert - 8, screen_width]
+    goal_side = [goal_line_vert, start_point], [goal_line_vert, screen_width]
     pygame.draw.aaline(screen, WHITE, list(goal_side[0]), list(goal_side[1]))
 
     # Makes the first element in each list the inverse of the whole screen width
-    goal_side[0][0] = goal_side[1][0] = screen_width - goal_line_vert + 8
+    goal_side[0][0] = goal_side[1][0] = screen_width - goal_line_vert + 10
     pygame.draw.aaline(screen, WHITE, list(goal_side[0]), list(goal_side[1]))
 
 
@@ -418,13 +455,13 @@ def StartUp():
 
 
 def addNewPlayer(side, player_color):
-    res, circle_size = [], 25
+    res = []
     # Displays the players on the screen for Both Side
     for soccer_player in side:
         # Adds to the list the new player
         # Gets the initial value of the player
         # Uses same size, color and its specific position
-        res.append(Circle(soccer_player.value, player_color, circle_size))
+        res.append(Circle(soccer_player.value, player_color))
     return res
 
 
@@ -453,10 +490,21 @@ def Main():
 def CheckCollide():
     global ball
 
+    # Checks if in bounds for both x, y coordinates
+    # if ball.size < ball.position[0] < screen_width - ball.size:
+    #     if ball.size < ball.position[1] < screen_height - ball.size:
+    #
+
 
 def MainGame():
-    global playerCircleL, playerCircleR
+    global playerCircleL, playerCircleR, p1_num, p2_num
     initializeTeams()
+    p1_num = p2_num = 1
+    # TODO: Switches the player as it is pressed
+    if pygame.key.get_pressed()[K_e]:
+        p1_num += 1
+    if pygame.key.get_pressed()[K_SLASH]:
+        p2_num += 1
 
     while True:
 
@@ -465,7 +513,7 @@ def MainGame():
             if event.type == pygame.USEREVENT:
                 global counter
                 counter -= 1
-                if counter == 0:
+                if counter <= 1:
                     GameOverPage()
                     return
 
@@ -474,18 +522,10 @@ def MainGame():
                 sys.exit()
 
         soccer = SoccerTeamPlayers.Teams
-        p1_num = p2_num = 1
-
-        # TODO: Switches the player as it is pressed
-        if pygame.key.get_pressed()[K_p]:
-            p1_num = (p1_num + 1) % len(playerCircleL)
-
-        if pygame.key.get_pressed()[K_q]:
-            p2_num = (p2_num + 1) % len(playerCircleR)
-
-        playerControlMovement(soccer.TEAM_ONE, p1_num)
-        playerControlMovement(soccer.TEAM_TWO, p2_num)
-        # robotMovement(soccer.TEAM_ONE) # For AI
+        playerControlMovement(soccer.TEAM_ONE)
+        playerControlMovement(soccer.TEAM_TWO)
+        # robotMovement(soccer.TEAM_ONE)  # For AI
+        # robotMovement(soccer.TEAM_TWO)  # For AI
 
         CheckCollide()
 
