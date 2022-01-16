@@ -71,7 +71,7 @@ player2 = Circle((screen_width * .8, half_height * .95), GREEN, 25)
 
 # ! Draws the goal post on both sides on the field
 goal_xpos, goal_ypos = 10, half_height - 70
-goal_posts = [GoalPost(goal_xpos, goal_ypos, WHITE), GoalPost(screen_width - goal_xpos, goal_ypos, WHITE)]
+goal_posts = [GoalPost(goal_xpos - 8, goal_ypos, WHITE), GoalPost(screen_width - goal_xpos - 2, goal_ypos, WHITE)]
 
 
 def isPressed(obj):
@@ -348,11 +348,11 @@ def displayTime():
 def displayGoalSides(start_point):
     # Draws the lines parallel to the goal
     goal_line_vert = 20
-    goal_side = [goal_line_vert, start_point], [goal_line_vert, screen_width]
+    goal_side = [goal_line_vert - 8, start_point], [goal_line_vert - 8, screen_width]
     pygame.draw.aaline(screen, WHITE, list(goal_side[0]), list(goal_side[1]))
 
     # Makes the first element in each list the inverse of the whole screen width
-    goal_side[0][0] = goal_side[1][0] = screen_width - goal_line_vert + 10
+    goal_side[0][0] = goal_side[1][0] = screen_width - goal_line_vert + 8
     pygame.draw.aaline(screen, WHITE, list(goal_side[0]), list(goal_side[1]))
 
 

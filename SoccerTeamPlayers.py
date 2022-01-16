@@ -15,6 +15,11 @@ class States(Enum):
     ASSISTING = 3
 
 
+class MovingPosition(Enum):
+    DEFENSE = FORWARD = 3
+    MIDDLE = 2
+
+
 class FieldSide(Enum):
     LEFT_SIDE, RIGHT_SIDE = 0, 1
 
