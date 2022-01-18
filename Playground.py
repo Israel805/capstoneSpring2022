@@ -29,7 +29,7 @@ counter = 60 * MINS  # 5 mins
 Trying to work the layout of the game
 Looks like this is a good idea of the digital layout
 
-Problem: how to get the players and the ball to move, then AI
+Problem: how to move the ball with player, then AI
 '''
 
 score = NO_VELOCITY = speed = [0, 0]
@@ -39,15 +39,15 @@ screen_width, screen_height = 1080, 768
 screen = pygame.display.set_mode((screen_width, screen_height))
 pygame.display.set_caption('Soccer Pong Game')
 half_screen = half_width, half_height = screen_width // 2, screen_height // 2
-button_size = [150, 50]
+player_size, button_size = 25, [150, 50]
 instruct_position = [half_width * .25, 70]
 
 
 # Draws a circle on the screen
 class Circle:
-    def __init__(self, position, circle_color, player_size=25):
+    def __init__(self, position, circle_color, circle_size=player_size):
         self.position = list(position)
-        self.color, self.size = circle_color, player_size
+        self.color, self.size = circle_color, circle_size
 
     def draw(self, size=0):  # Additional size
         return pygame.draw.circle(screen, self.color, self.position, self.size, size)
@@ -206,8 +206,8 @@ def isGoal():
 
 
 def inBounds(ply):
-    return ply.size < ply.pos_x < screen_width - ply.size and \
-           ply.size < ply.pos_y < screen_height - ply.size
+    return ply.position[0] in range(ply.size, screen_width - ply.size), \
+            ply.position[1] in range(ply.size, screen_height - ply.size)
 
 
 playersOption = allColors
@@ -538,14 +538,33 @@ def initializeTeams():
 ball = Circle(half_screen, RED, 20)
 
 
+def gotHit(player):
+    for x in range(2):
+        for y in range(2):
+            # if any player did hit the ball it goes the direction it was 'pushed'
+            if player.position[x] - player_size is ball.position[x] - ball.size or \
+                    player.position[x] + player_size is ball.position[x] + ball.size:
+                ball.position[x] += player.vel
+
+
 # TODO
 def CheckCollide():
     global ball
 
     # Checks if in bounds for both x, y coordinates
-    # if ball.size < ball.position[0] < screen_width - ball.size:
-    #     if ball.size < ball.position[1] < screen_height - ball.size:
-    #
+    in_field = inBounds(ball)
+    if in_field:
+        for player_side in [left_team, right_team]:
+            for player in player_side:
+                ball.position = gotHit(player)
+
+
+    else:
+        if in_field[0]:  # Jumps back the left and right sides
+            ball.position[0] = - ball.position[0]
+
+        if in_field[1]:  # Jumps back the top to bottom sides
+            ball.position[1] = - ball.position[1]
 
 
 def MainGame():
