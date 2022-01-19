@@ -41,7 +41,6 @@ pygame.display.set_caption('Soccer Pong Game')
 half_screen = half_width, half_height = screen_width // 2, screen_height // 2
 button_size, goal_size = [150, 50], [10, 150]
 ball_size, player_size = 20, 25
-instruct_position = [half_width * .25, 70]
 
 
 # Draws a circle on the screen
@@ -71,13 +70,14 @@ goal_xpos, goal_ypos = 10, half_height - 70
 goal_posts = [GoalPost((goal_xpos - 8, goal_ypos), WHITE), GoalPost((screen_width - goal_xpos - 2, goal_ypos), WHITE)]
 
 # Game Rectangles
-ball = Circle(half_screen, RED, 20)
+ball = Circle(half_screen, RED, ball_size)
 
 
 def isPressed(obj):
     return mouse.get_pressed(3)[0] and obj.collidepoint(mouse.get_pos())
 
 
+# For player and AI use
 class CheckMovement:
     def __init__(self, position, size):
         self.position, self.size = position, size
@@ -95,12 +95,11 @@ class CheckMovement:
         return self.position[1] < screen_height - self.size
 
 
-class CheckPlayerMovement(CheckMovement):
+class CheckUsersMovement(CheckMovement):
     def __init__(self, team, player, vel):
         super().__init__(player.position, player.size)
-        self.keys = pygame.key.get_pressed()
-        self.velocity = vel
-        self.player, soccer = player, SoccerTeamPlayers.Teams
+        self.keys, self.velocity = pygame.key.get_pressed(), vel
+        soccer = SoccerTeamPlayers.Teams
         self.player_key = {
             soccer.TEAM_ONE: [pygame.K_a, pygame.K_d, pygame.K_w, pygame.K_s],
             soccer.TEAM_TWO: [pygame.K_LEFT, pygame.K_RIGHT, pygame.K_UP, pygame.K_DOWN]
@@ -160,7 +159,7 @@ def playerControlMovement(play_team, teams):
     soccer = SoccerTeamPlayers.Teams
     # Gets the correct circle and controls from the team side chosen
     num = {soccer.TEAM_ONE: p1_num, soccer.TEAM_TWO: p2_num}.get(play_team)
-    moveAllDirections(CheckPlayerMovement(play_team, teams[num], vel))
+    moveAllDirections(CheckUsersMovement(play_team, teams[num], vel))
 
 
 def robotMovement(team):  # TODO
@@ -203,22 +202,20 @@ playersOption.remove(player1.color)
 playersOption.remove(player2.color)
 
 
-def makeOptions():
-    # Collects all the colors available
-    result, space = [], .4
-    for color_choice in playersOption:
-        new_player = Circle((half_width + space - 15, screen_height * .7), color_choice)
-        result.append(new_player)
-        space += 50
-
-    return result
-
-
 def OptionPage():
     screen.fill(PAGE_COLOR)  # Clears the screen
 
 
 def displayOptions():
+    def makeOptions():
+        # Collects all the colors available
+        result, space = [], .4
+        for color_choice in playersOption:
+            new_player = Circle((half_width + space - 15, screen_height * .7), color_choice)
+            result.append(new_player)
+            space += 50
+        return result
+
     global player1, player2
     for other_colors in makeOptions():
         color = other_colors.draw()
@@ -242,13 +239,35 @@ def displayPlayerTitle():
     screen.blit(default_label("Player 02"), cir_size)
 
 
+def displayBothControls():
+    num_player = ["Player One", "Player Two"]
+    controller = ["W", "S", "A", "D", "Q"], ["^", "v", "<", ">", "P"]
+    instr = [" - move up", " - move down", " - move left", " - move right", " - boost"]
+
+    # for player one instruction position
+    instruct_position = [half_width * .5, half_height * .6]
+    i = 0
+    for num in num_player:
+        screen.blit(default_label(num), instruct_position)
+        instruct_position[1] += 30
+        for x in range(len(controller[i])):
+            screen.blit(default_label(controller[i][x] + instr[x]), instruct_position)
+            instruct_position[1] += 30
+
+        # for player two instruction position
+        instruct_position = [half_width * 1.2, half_height * .6]
+        i += 1
+
+
 def displayStartPage():
     global player1, player2
     screen.fill(PAGE_COLOR)
     screen.blit(default_label("Welcome to Retro Soccer", 40), (half_width * 0.55, 30))
+    displayPlayerTitle()
     player1.draw()
     displayOptions()
     player2.draw()
+    displayBothControls()
 
 
 def StartPage():
@@ -409,57 +428,6 @@ def displayGoalAndPlayers():
         [player.draw() for player in player_side]
 
 
-def displayPlayerOneControls():
-    screen.blit(default_label("Player One"), instruct_position)
-    instruct_position[1] += 30
-    screen.blit(default_label("W - move up"), instruct_position)
-    instruct_position[1] += 30
-    screen.blit(default_label("S - move down"), instruct_position)
-    instruct_position[1] += 30
-    screen.blit(default_label("A - move left"), instruct_position)
-    instruct_position[1] += 30
-    screen.blit(default_label("D - move right"), instruct_position)
-    instruct_position[1] += 30
-    screen.blit(default_label("W - boost"), instruct_position)
-
-def displayPlayerTwoControls():
-    screen.blit(default_label("/ - boost"), instruct_position)
-    instruct_position[1] -= 30
-    screen.blit(default_label("^ - move up"), instruct_position)
-    instruct_position[1] += 30
-    screen.blit(default_label("v - move down"), instruct_position)
-    instruct_position[1] += 30
-    screen.blit(default_label("A - move left"), instruct_position)
-    instruct_position[1] += 30
-    screen.blit(default_label("D - move right"), instruct_position)
-    instruct_position[1] += 30
-    screen.blit(default_label("Player Two"), instruct_position)
-
-
-def InstructionPage():
-    screen.fill(PAGE_COLOR)
-    # Creates a new button for the start button
-    button_pos = [half_width * .85, screen_height - 145]
-    button = pygame.Rect(button_pos, button_size)
-
-    while True:
-        # If clicked on the button, it will start the game
-        if isPressed(button):
-            return
-
-        displayPlayerOneControls()
-        instruct_position[0] = half_width * .75
-        displayPlayerTwoControls()
-
-        # Draws the rectangle button
-        pygame.draw.rect(screen, WHITE, button)
-
-        # Creates a text to go with the button
-        play_label = default_label("Start", font_color=BLACK)
-        button_pos[0] = half_width * .95
-        screen.blit(play_label, button_pos)
-
-
 def CountDownPage():
     countDown = 3
     # Starts a count down from 3 to start the game (starts at 'GO')
@@ -490,42 +458,40 @@ def hit(circle_player):
     run = circle_player.position[0] - ball.position[0]
     total_radius = (player_size // 2 + ball_size // 2)
     # Distance of the centers, radius of both circles
-    return  rise // run < total_radius
+    return rise // run < total_radius
 
 
-def getHit():
-    in_field = inBounds(ball)
-    # for both teams
-    for player_side in [left_team.players, right_team.players] and in_field:
-        for player in player_side and in_field:
-            # If any player collides with the ball push the ball with its velocity
-            p, b = player.draw(), ball.draw()
-            # In the x direction
-            if p.colliderect(b)[0]:
-                ball.position[0] += player.vel
-            # In the y direction
-            if p.colliderect(b)[1]:
-                ball.position[1] += player.vel
-            if hit(player):
-                ball.position[0] += player.vel
+def getHit(player, ball):
+    p, b = player.draw(), ball.draw()
+    # If any player collides with the ball push the ball with its velocity
+    # In the x direction
+    if p.colliderect(b)[0]:
+        return player.vel, 0
+    # In the y direction
+    if p.colliderect(b)[1]:
+        return 0, player.vel
+
+    if hit(p):
+        return player.vel
 
 
-# TODO
 def CheckCollide():
     global ball
 
     # Checks if in bounds for both x, y coordinates
     in_field = inBounds(ball)
     if in_field:
+        # for both teams
         for player_side in [left_team.players, right_team.players]:
             for player in player_side and in_field:
-                ball.position[0] += 1
-    else:
-        if in_field[0]:  # Jumps back the left and right sides
-            ball.position[0] = - ball.position[0]
+                ball.position[1] += 1 # getHit() # TODO
+        return
 
-        if in_field[1]:  # Jumps back the top to bottom sides
-            ball.position[1] = - ball.position[1]
+    if in_field[0]:  # Jumps back the left and right sides
+        ball.position[0] = - ball.position[0]
+
+    if in_field[1]:  # Jumps back the top to bottom sides
+        ball.position[1] = - ball.position[1]
 
 
 def initializeTeams():
@@ -583,7 +549,7 @@ def MainGame():
 
 
 def Main():
-    #InstructionPage()
+    # InstructionPage()
     CountDownPage()
     MainGame()
 
