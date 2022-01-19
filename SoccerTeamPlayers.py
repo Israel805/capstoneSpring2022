@@ -47,3 +47,23 @@ class StartPositionLeft(Enum):
 
     # BACK_TOP = (w // (1.15 * 2), h + 60)
     # BACK_BOTTOM = (w // (1.15 * 2), h - 60)
+
+
+class Team:
+    def __init__(self, team_num, player_color):
+        self.team_number = Teams(team_num)
+        self.side = {Teams.TEAM_ONE: StartPositionLeft,
+                     Teams.TEAM_TWO: StartPositionRight}.get(team_num)
+        self.team_color = player_color
+
+        # Adds to the list the new player
+        # Gets the initial value of the player
+        # Uses same size, color and its specific position
+        self.players = [Player(self.team_number, soccer_player.value, player_color)
+                        for soccer_player in self.side]
+
+
+class Player(Playground.Circle):
+    def __init__(self, team, position, circle_color):
+        super().__init__(position, circle_color)
+        self.team = team
