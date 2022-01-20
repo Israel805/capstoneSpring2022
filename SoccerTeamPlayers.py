@@ -28,25 +28,17 @@ w, h = Playground.half_width, Playground.half_height
 class StartPositionRight(Enum):
     # Initial position for right side team
     FORWARD = (w * 1.4, h)
-    MIDDLE, MIDDLE_BACK = (w * 1.7, h), (w * 1.9, h)
-    MIDDLE_LEFT, MIDDLE_RIGHT = (w * 1.6, h * .65), (w * 1.6, h * 1.15)
-    # BACK_LEFT, BACK_LEFT_RIGHT = (w * 1, h // 2), (w * 3, h * 2)
-    # BACK_RIGHT, BACK_RIGHT_LEFT = (w * 1.5, h * 2.5), (w * 1.5, h * 3 + 30)
-
-    # BACK_TOP = (w * 1.5, h + 60)
-    # BACK_BOTTOM = (w * 1.5, h - 60)
+    MIDDLE, MIDDLE_BACK = (w * 1.7, h * .4), (w * 1.9, h)
+    SIDE_LEFT, SIDE_RIGHT = (w * 1.6, h * .8), (w * 1.6, h * 1.5)
+    BACK_LEFT, BACK_RIGHT = (w * 1.9, h * .5), (w * 1.8, h * .8)
 
 
 class StartPositionLeft(Enum):
     # Initial position for left side team
     FORWARD = (w * .6, h)
     MIDDLE, MIDDLE_BACK = (w * .5, h * 1.25), (w * .5, h * .75)
-    MIDDLE_LEFT, MIDDLE_RIGHT = (w * .4, h * 1.35), (w * .4, h * 1.3)
-    # BACK_LEFT, BACK_LEFT_RIGHT = (w // 1.15, h // 2), (w // 1.15, h * 2)
-    # BACK_RIGHT, BACK_RIGHT_LEFT = (w // (1.15 * 2), h * 2.5), (w // (1.15 * 2), h * 3 + 30)
-
-    # BACK_TOP = (w // (1.15 * 2), h + 60)
-    # BACK_BOTTOM = (w // (1.15 * 2), h - 60)
+    SIDE_LEFT, SIDE_RIGHT = (w * .5, h), (w * .4, h * 1.6)
+    BACK_LEFT, BACK_RIGHT = (w * .2, h * .6), (w * .2, h * 1.2)
 
 
 class Team:

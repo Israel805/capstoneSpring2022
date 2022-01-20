@@ -3,6 +3,7 @@ import sys
 from pygame import *
 # General setup
 import SoccerTeamPlayers
+from AI import playingDefense, playingOffense, playingMiddle
 
 WHITE = (255, 255, 255)
 PAGE_COLOR = BLACK = (0, 0, 0)
@@ -62,14 +63,14 @@ class GoalPost:
         pygame.draw.rect(screen, self.color, self.object)
 
 
-player1 = Circle((half_width * .35, half_height * .95), WHITE, 25)
-player2 = Circle((screen_width * .8, half_height * .95), GREEN, 25)
+player1 = Circle((half_width * .35, half_height * .95), WHITE, player_size)
+player2 = Circle((screen_width * .8, half_height * .95), GREEN, player_size)
 
 # ! Draws the goal post on both sides on the field
 goal_xpos, goal_ypos = 10, half_height - 70
 goal_posts = [GoalPost((goal_xpos - 8, goal_ypos), WHITE), GoalPost((screen_width - goal_xpos - 2, goal_ypos), WHITE)]
 
-# Game Rectangles
+# The primary ball to score on
 ball = Circle(half_screen, RED, ball_size)
 
 
@@ -133,19 +134,6 @@ def moveAllDirections(self):
     self.moveDown()
 
 
-def playingDefense(team_playing, selected_player):
-    # playing_side = getTeam(team_playing)[selected_player]
-    pass
-
-
-def playingMiddle(team_playing, selected_player):
-    pass
-
-
-def playingOffense(team_playing, selected_player):
-    pass
-
-
 # Uses the team their on and which player player one has control
 def playerControlMovement(play_team, teams):
     global p1_num, p2_num
@@ -166,18 +154,18 @@ def robotMovement(team):  # TODO
     global ball
     place = 0
     # For defense
-    position = SoccerTeamPlayers.MovingPosition.DEFENSE
-    for x in range(position.value):
+    position = SoccerTeamPlayers.MovingPosition
+    for x in range(position.DEFENSE.value):
         playingDefense(team, place)
         place += 1
 
     # For middle
-    for x in range(position.value):
+    for x in range(position.MIDDLE.value):
         playingMiddle(team, place)
         place += 1
 
     # For forward
-    for x in range(position.value):
+    for x in range(position.FORWARD.value):
         playingOffense(team, place)
         place += 1
 
@@ -484,7 +472,7 @@ def CheckCollide():
         # for both teams
         for player_side in [left_team.players, right_team.players]:
             for player in player_side and in_field:
-                ball.position[1] += 1 # getHit() # TODO
+                ball.position[1] += 1  # getHit() # TODO
         return
 
     if in_field[0]:  # Jumps back the left and right sides
@@ -507,7 +495,7 @@ def MainGame():
     global left_team, right_team, p1_num, p2_num
 
     initializeTeams()
-    p1_num = p2_num = 1
+    p1_num = p2_num = 0
     # TODO: Switches the player as it is pressed
     if pygame.key.get_pressed()[K_e]:
         p1_num += 1
@@ -521,7 +509,7 @@ def MainGame():
             if event.type == pygame.USEREVENT:
                 global counter
                 counter -= 1
-                if counter <= 1:
+                if counter <= 0:
                     GameOverPage()
                     return
 
