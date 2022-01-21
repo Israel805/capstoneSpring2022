@@ -12,9 +12,14 @@ RED = (255, 0, 0)
 GREEN = (0, 255, 0)
 allColors = [LIGHT_GREY, RED, GREEN, WHITE, BLACK]
 
+# Creates a new pygame
 pygame.init()
+
+# Creates a new clock timer
 clock = pygame.time.Clock()
 pygame.time.set_timer(pygame.USEREVENT, 1000)
+MINS = 5
+counter = 60 * MINS  # 5 mins
 
 
 # Creates a label with default font or custom size
@@ -23,9 +28,6 @@ def default_label(string, font_size=30, font_color=WHITE):
     return default_font.render(str(string), True, font_color)
 
 
-MINS = 5
-counter = 60 * MINS  # 5 mins
-
 '''
 Trying to work the layout of the game
 Looks like this is a good idea of the digital layout
@@ -33,16 +35,16 @@ Looks like this is a good idea of the digital layout
 Problem: how to move the ball with player, then AI
 '''
 
-score = NO_VELOCITY = speed = [0, 0]
-
 # ! Setting up the main window
 screen_width, screen_height = 1080, 768
 screen = pygame.display.set_mode((screen_width, screen_height))
 pygame.display.set_caption('Soccer Pong Game')
+
+# Creates global variables
+score, vel = [0, 0], 5
 half_screen = half_width, half_height = screen_width // 2, screen_height // 2
 button_size, goal_size = [150, 50], [10, 150]
 ball_size, player_size = 20, 25
-vel = 5
 p1_num = p2_num = 0
 
 
@@ -65,6 +67,7 @@ class GoalPost:
         pygame.draw.rect(screen, self.color, self.object)
 
 
+# Creates both circles for the intro
 player1 = Circle((half_width * .35, half_height * .95), WHITE, player_size)
 player2 = Circle((screen_width * .8, half_height * .95), GREEN, player_size)
 
@@ -76,6 +79,7 @@ goal_posts = [GoalPost((goal_xpos - 8, goal_ypos), WHITE), GoalPost((screen_widt
 ball = Circle(half_screen, RED, ball_size)
 
 
+# Checks if the mouse is clicked and inbound of the button
 def isPressed(obj):
     return mouse.get_pressed(3)[0] and obj.collidepoint(mouse.get_pos())
 
@@ -100,8 +104,8 @@ def playerControlMovement(play_team, teams):
     if pygame.key.get_pressed()[K_COLON] or pygame.key.get_pressed()[K_q]:
         vel = vel * 1.25
 
-    soccer = SoccerTeamPlayers.Teams
     # Gets the correct circle and controls from the team side chosen
+    soccer = SoccerTeamPlayers.Teams
     num = {soccer.TEAM_ONE: p1_num, soccer.TEAM_TWO: p2_num}.get(play_team)
     moveAllDirections(play_team, teams[num])
 
@@ -155,7 +159,9 @@ def displayOptions():
         # Collects all the colors available
         result, space = [], .4
         for color_choice in playersOption:
+            # Creates a new circle to display in intro, with specific color options
             new_player = Circle((half_width + space - 15, screen_height * .7), color_choice)
+            # Adds it to list
             result.append(new_player)
             space += 50
         return result
@@ -184,6 +190,12 @@ def displayPlayerTitle():
 
 
 def displayBothControls():
+    def displayInstruct(ctrl):
+        for x in range(len(ctrl)):
+            screen.blit(default_label(ctrl[x] + instr[x]), instruct_position)
+            instruct_position[1] += 30
+
+    # Creates both instruction controls for both teams
     num_player = ["Player One", "Player Two"]
     controller = ["W", "S", "A", "D", "Q"], ["^", "v", "<", ">", "P"]
     instr = [" - move up", " - move down", " - move left", " - move right", " - boost"]
@@ -194,9 +206,7 @@ def displayBothControls():
     for num in num_player:
         screen.blit(default_label(num), instruct_position)
         instruct_position[1] += 30
-        for x in range(len(controller[i])):
-            screen.blit(default_label(controller[i][x] + instr[x]), instruct_position)
-            instruct_position[1] += 30
+        displayInstruct(controller[i])
 
         # for player two instruction position
         instruct_position = [half_width * 1.2, half_height * .6]
@@ -205,9 +215,13 @@ def displayBothControls():
 
 def displayStartPage():
     global player1, player2
-    screen.fill(PAGE_COLOR)
+    screen.fill(PAGE_COLOR) # Makes background
+
+    # Displays the title
     screen.blit(default_label("Welcome to Retro Soccer", 40), (half_width * 0.55, 30))
     displayPlayerTitle()
+
+    # Draws out both p1, p2 and other available options
     player1.draw()
     displayOptions()
     player2.draw()
@@ -261,6 +275,7 @@ def displayScoreFinal():
     score_position = player_pos = [20, half_height]
     score_position[1] *= 1.05
 
+    # Displays the score sheet on the top of the screen
     screen.blit(default_label("Player 1", 200), player_pos)
     player_pos[0] = screen_width - player_pos[0]
     screen.blit(default_label("Player 2", 200), player_pos)
@@ -270,6 +285,7 @@ def displayScoreFinal():
 
 
 def chooseWinner():
+    # Determines a winner or a draw for the final income
     title_position = [half_width, 50]
     if score[0] == score[0]:
         screen.blit(default_label("Draw", 200), title_position)
@@ -397,17 +413,23 @@ def CountDownPage():
         clock.tick(60)
 
 
+# Function to calculate the distance between two objects
+def distance(obj1, obj2):
+    rise = obj1.position[1] - obj2.position[1]
+    run = obj1.position[0] - obj2.position[0]
+    return abs(rise // run)
+
+
 def playerContact(circle_player):
-    rise = circle_player.position[1] - ball.position[1]
-    run = circle_player.position[0] - ball.position[0]
     total_radius = (player_size // 2 + ball_size // 2)
     # Distance of the centers, radius of both circles
-    return rise // run < total_radius
+    return distance(circle_player, ball) < total_radius
 
 
 def getHit(player):
     p, b = player.draw(), ball.draw()
     # If any player collides with the ball push the ball with its velocity
+
     # In the x direction
     if p.colliderect(b)[0]:
         return player.vel, 0
@@ -415,7 +437,7 @@ def getHit(player):
     if p.colliderect(b)[1]:
         return 0, player.vel
 
-    if playerContact(p):
+    if playerContact(player):
         return player.vel
 
 
@@ -451,7 +473,6 @@ def MainGame():
     global left_team, right_team, p1_num, p2_num
 
     initializeTeams()
-    p1_num = p2_num = 0
     # TODO: Switches the player as it is pressed
     if pygame.key.get_pressed()[K_e]:
         p1_num += 1
@@ -465,8 +486,7 @@ def MainGame():
             if event.type == pygame.USEREVENT:
                 global counter
                 counter -= 1
-                if counter <= 0:
-                    GameOverPage()
+                if counter == -1:
                     return
 
             if event.type == pygame.QUIT:
@@ -496,6 +516,7 @@ def Main():
     # InstructionPage()
     CountDownPage()
     MainGame()
+    GameOverPage()
 
 
 if __name__ == '__main__':

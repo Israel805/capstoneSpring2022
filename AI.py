@@ -5,10 +5,6 @@ import Playground
 import SoccerTeamPlayers
 
 
-# def getClosestPlayer():
-#     for
-
-
 def move(playr, dest, velocity=1):  # For AI
     for index in range(len(dest)):
         if dest[index] > playr.position[index]:
@@ -29,9 +25,18 @@ def shoot(player):
         ball.position[1] += (5 + random.randint(-3, 2)) * (1 if left_side else -1)
 
 
-def pass_ball(p1, p2):
+def getClosestPlayer(team, current_player):
+    closest = None
+    for player in team.players:
+        if closest is None or Playground.distance(current_player, player.position) < closest:
+            closest = player
+    return closest
+
+
+def pass_ball(p1):
     if Playground.playerContact(p1):
-        move(Playground.ball, p2, 3)
+        move(Playground.ball, getClosestPlayer(p1.team.team_number, p1), 3)
+
 
 # Objective: defend the ball from getting into the goal post
 def playingDefense(team_playing, selected_player, bounds=None):
@@ -58,7 +63,8 @@ def playingMiddle(team_playing, selected_player):
         # pass to other player
         pass_ball(selected_player, )
         return
-    playingDefense(team_playing, selected_player, selected_player[0] in range(Playground.half_width - 100, Playground.half_width + 100))
+    playingDefense(team_playing, selected_player,
+                   selected_player[0] in range(Playground.half_width - 100, Playground.half_width + 100))
 
 
 # Objective: score into the goal post
@@ -71,4 +77,5 @@ def playingOffense(team_playing, selected_player):
             # Shoot
             shoot(selected_player)
 
-    playingDefense(team_playing, selected_player, selected_player[0] in range(Playground.half_width - 100, Playground.half_width + 100))
+    playingDefense(team_playing, selected_player,
+                   selected_player[0] in range(Playground.half_width - 100, Playground.half_width + 100))
