@@ -42,6 +42,8 @@ pygame.display.set_caption('Soccer Pong Game')
 half_screen = half_width, half_height = screen_width // 2, screen_height // 2
 button_size, goal_size = [150, 50], [10, 150]
 ball_size, player_size = 20, 25
+vel = 5
+p1_num = p2_num = 0
 
 
 # Draws a circle on the screen
@@ -78,52 +80,8 @@ def isPressed(obj):
     return mouse.get_pressed(3)[0] and obj.collidepoint(mouse.get_pos())
 
 
-# For player and AI use
-class CheckMovement:
-    def __init__(self, position, size):
-        self.position, self.size = position, size
-
-    def isLeftBound(self):
-        return self.position[0] > self.size
-
-    def isRightBound(self):
-        return self.position[0] < screen_width - self.size
-
-    def isUpperBound(self):
-        return self.position[1] > 75 + self.size
-
-    def isLowerBound(self):
-        return self.position[1] < screen_height - self.size
-
-
-class CheckUsersMovement(CheckMovement):
-    def __init__(self, team, player, vel):
-        super().__init__(player.position, player.size)
-        self.keys, self.velocity = pygame.key.get_pressed(), vel
-        soccer = SoccerTeamPlayers.Teams
-        self.player_key = {
-            soccer.TEAM_ONE: [pygame.K_a, pygame.K_d, pygame.K_w, pygame.K_s],
-            soccer.TEAM_TWO: [pygame.K_LEFT, pygame.K_RIGHT, pygame.K_UP, pygame.K_DOWN]
-        }.get(team)
-
-    def moveLeft(self):
-        if self.keys[self.player_key[0]] and self.isLeftBound():
-            self.position[0] -= self.velocity
-
-    def moveRight(self):
-        if self.keys[self.player_key[1]] and self.isRightBound():
-            self.position[0] += self.velocity
-
-    def moveUp(self):
-        if self.keys[self.player_key[2]] and self.isUpperBound():
-            self.position[1] -= self.velocity
-
-    def moveDown(self):
-        if self.keys[self.player_key[3]] and self.isLowerBound():
-            self.position[1] += self.velocity
-
-
-def moveAllDirections(self):
+def moveAllDirections(current_team, currentPlayer):
+    self = SoccerTeamPlayers.CheckUsersMovement(current_team, currentPlayer)
     # The outer circle doesnt touch the left side, increment in x coordinate
     self.moveLeft()
     # Only to the right of the screen, decrement in x coordinate
@@ -136,9 +94,7 @@ def moveAllDirections(self):
 
 # Uses the team their on and which player player one has control
 def playerControlMovement(play_team, teams):
-    global p1_num, p2_num
-    # stores keys pressed
-    vel = 5
+    global p1_num, p2_num, vel
 
     # Creates a boost for the each player's velocity
     if pygame.key.get_pressed()[K_COLON] or pygame.key.get_pressed()[K_q]:
@@ -147,7 +103,7 @@ def playerControlMovement(play_team, teams):
     soccer = SoccerTeamPlayers.Teams
     # Gets the correct circle and controls from the team side chosen
     num = {soccer.TEAM_ONE: p1_num, soccer.TEAM_TWO: p2_num}.get(play_team)
-    moveAllDirections(CheckUsersMovement(play_team, teams[num], vel))
+    moveAllDirections(play_team, teams[num])
 
 
 def robotMovement(team):  # TODO
@@ -441,7 +397,7 @@ def CountDownPage():
         clock.tick(60)
 
 
-def hit(circle_player):
+def playerContact(circle_player):
     rise = circle_player.position[1] - ball.position[1]
     run = circle_player.position[0] - ball.position[0]
     total_radius = (player_size // 2 + ball_size // 2)
@@ -449,7 +405,7 @@ def hit(circle_player):
     return rise // run < total_radius
 
 
-def getHit(player, ball):
+def getHit(player):
     p, b = player.draw(), ball.draw()
     # If any player collides with the ball push the ball with its velocity
     # In the x direction
@@ -459,7 +415,7 @@ def getHit(player, ball):
     if p.colliderect(b)[1]:
         return 0, player.vel
 
-    if hit(p):
+    if playerContact(p):
         return player.vel
 
 
@@ -472,7 +428,7 @@ def CheckCollide():
         # for both teams
         for player_side in [left_team.players, right_team.players]:
             for player in player_side and in_field:
-                ball.position[1] += 1  # getHit() # TODO
+                ball.position[1] += 1  # playerContact # TODO
         return
 
     if in_field[0]:  # Jumps back the left and right sides

@@ -1,4 +1,7 @@
 from enum import Enum
+
+import pygame
+
 import Playground
 
 
@@ -59,3 +62,48 @@ class Player(Playground.Circle):
     def __init__(self, team, position, circle_color):
         super().__init__(position, circle_color)
         self.team = team
+
+
+# For player and AI use
+class CheckMovement:
+    def __init__(self, position, size):
+        self.position, self.size = position, size
+
+    def isLeftBound(self):
+        return self.position[0] > self.size
+
+    def isRightBound(self):
+        return self.position[0] < Playground.screen_width - self.size
+
+    def isUpperBound(self):
+        return self.position[1] > 75 + self.size
+
+    def isLowerBound(self):
+        return self.position[1] < Playground.screen_height - self.size
+
+
+class CheckUsersMovement(CheckMovement):
+    def __init__(self, team, player):
+        super().__init__(player.position, player.size)
+        self.keys, self.velocity = pygame.key.get_pressed(), Playground.vel
+        soccer = Teams
+        self.player_key = {
+            soccer.TEAM_ONE: [pygame.K_a, pygame.K_d, pygame.K_w, pygame.K_s],
+            soccer.TEAM_TWO: [pygame.K_LEFT, pygame.K_RIGHT, pygame.K_UP, pygame.K_DOWN]
+        }.get(team)
+
+    def moveLeft(self):
+        if self.keys[self.player_key[0]] and self.isLeftBound():
+            self.position[0] -= self.velocity
+
+    def moveRight(self):
+        if self.keys[self.player_key[1]] and self.isRightBound():
+            self.position[0] += self.velocity
+
+    def moveUp(self):
+        if self.keys[self.player_key[2]] and self.isUpperBound():
+            self.position[1] -= self.velocity
+
+    def moveDown(self):
+        if self.keys[self.player_key[3]] and self.isLowerBound():
+            self.position[1] += self.velocity
