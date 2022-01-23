@@ -398,13 +398,11 @@ def CountDownPage():
 
 
 def playerContact(circle_player):
-    total_radius = (player_size // 2 + ball_size // 2)
     # Distance of the centers, radius of both circles
-    return distance(circle_player, ball) <= total_radius
+    return distance(circle_player, ball) < ball_size * 2
 
 
 def getHit(player):
-
     # If any player collides with the ball push the ball with its velocity
     arr = direction(player, ball)
     for i in range(len(arr)):
@@ -424,6 +422,13 @@ def CheckIndividualSide(in_field):
             ball.position[i] = - ball.position[i]
 
 
+def move_ball(player):
+    # Saves the hit made and adds it to the balls position
+    h = getHit(player)
+    ball.position[0] += h[0]
+    ball.position[1] += h[1]
+
+
 def CheckCollide():
     global ball
 
@@ -434,11 +439,8 @@ def CheckCollide():
     if in_field:
         # for both teams
         for player_side in [left_team.players, right_team.players]:
-            for player in player_side:  # TODO
-                # Saves the hit made and adds it to the balls position
-                h = getHit(player)
-                ball.position[0] += h[0]
-                ball.position[1] += h[1]
+            [move_ball(player) for player in player_side]  # TODO
+
         return
 
     CheckIndividualSide(in_field)
@@ -455,8 +457,6 @@ def initializeTeams():
 
 def MainGame():
     global left_team, right_team, p1_num, p2_num
-
-    initializeTeams()
     # TODO: Switches the player as it is pressed
     if pygame.key.get_pressed()[K_e]:
         p1_num += 1
@@ -502,8 +502,8 @@ def MainGame():
 
 
 def Main():
-    # InstructionPage()
     CountDownPage()
+    initializeTeams()
     MainGame()
     GameOverPage()
 

@@ -29,6 +29,19 @@ def move(playr, dest, velocity=1):  # For AI
         if dest.position[index] < playr.position[index]:
             playr.position[index] -= velocity
 
+# def getHit(player):
+#     # If any player collides with the ball push the ball with its velocity
+#     ball = Playground.ball
+#     arr = direction(player, ball)
+#     for i in range(len(arr)):
+#         if arr[i] > 1:
+#             arr[i] = 1
+#
+#         if arr[i] < -1:
+#             arr[i] = -1
+#
+#     return [5 * arr[x] for x in range(len(arr))] if Playground.playerContact(player) else [0, 0]
+
 
 def shoot(player):
     ball = Playground.ball
@@ -66,10 +79,11 @@ def playingDefense(team_playing, selected_player, other_players, bounds=None):
         original_pos = selected_player.position
         ball = Playground.ball
         while ball.position is not selected_player.position and bounds:
-            if Playground.inBounds(selected_player):
+            if SoccerTeamPlayers.inBounds(selected_player):
                 move(selected_player, ball.position)
 
         # if ball in possession pass to teammate
+        pass_ball(selected_player, other_players)
 
         while selected_player.position is not original_pos:
             move(selected_player, original_pos)

@@ -64,6 +64,11 @@ class Player(Playground.Circle):
         self.team = team
 
 
+def inBounds(ply):
+    return ply.position[0] in range(ply.size, (w * 2) - ply.size), \
+           ply.position[1] in range(ply.size, (h * 2) - ply.size)
+
+
 # For player and AI use
 class CheckMovement:
     def __init__(self, position, size):
