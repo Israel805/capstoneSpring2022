@@ -3,7 +3,7 @@ import sys
 from pygame import *
 # General setup
 import SoccerTeamPlayers
-from AI import playingDefense, playingOffense, playingMiddle
+from AI import distance, direction, robotMovement
 
 WHITE = (255, 255, 255)
 PAGE_COLOR = BLACK = (0, 0, 0)
@@ -110,33 +110,17 @@ def playerControlMovement(play_team, teams):
     moveAllDirections(play_team, teams[num])
 
 
-def robotMovement(team):  # TODO
-    global ball
-    place = 0
-    # For defense
-    position = SoccerTeamPlayers.MovingPosition
-    for x in range(position.DEFENSE.value):
-        playingDefense(team, place)
-        place += 1
-
-    # For middle
-    for x in range(position.MIDDLE.value):
-        playingMiddle(team, place)
-        place += 1
-
-    # For forward
-    for x in range(position.FORWARD.value):
-        playingOffense(team, place)
-        place += 1
-
-
 def isGoal():
     global ball, goal_posts
+    goal = False
     for index in range(len(goal_posts)):
         if goal_posts[index].object.collidepoint(ball.position):
             score[(index + 1) % 1] += 1
+            goal = True
 
-    MainGame()  # Should restart the original position
+    if goal:
+        MainGame()  # Should restart the original position
+        return
 
 
 def inBounds(ply):
@@ -215,7 +199,7 @@ def displayBothControls():
 
 def displayStartPage():
     global player1, player2
-    screen.fill(PAGE_COLOR) # Makes background
+    screen.fill(PAGE_COLOR)  # Makes background
 
     # Displays the title
     screen.blit(default_label("Welcome to Retro Soccer", 40), (half_width * 0.55, 30))
@@ -413,51 +397,51 @@ def CountDownPage():
         clock.tick(60)
 
 
-# Function to calculate the distance between two objects
-def distance(obj1, obj2):
-    rise = obj1.position[1] - obj2.position[1]
-    run = obj1.position[0] - obj2.position[0]
-    return abs(rise // run)
-
-
 def playerContact(circle_player):
     total_radius = (player_size // 2 + ball_size // 2)
     # Distance of the centers, radius of both circles
-    return distance(circle_player, ball) < total_radius
+    return distance(circle_player, ball) <= total_radius
 
 
 def getHit(player):
-    p, b = player.draw(), ball.draw()
+
     # If any player collides with the ball push the ball with its velocity
+    arr = direction(player, ball)
+    for i in range(len(arr)):
+        if arr[i] > 1:
+            arr[i] = 1
 
-    # In the x direction
-    if p.colliderect(b)[0]:
-        return player.vel, 0
-    # In the y direction
-    if p.colliderect(b)[1]:
-        return 0, player.vel
+        if arr[i] < -1:
+            arr[i] = -1
 
-    if playerContact(player):
-        return player.vel
+    return [5 * arr[x] for x in range(len(arr))] if playerContact(player) else [0, 0]
+
+
+def CheckIndividualSide(in_field):
+    for i in range(len(in_field)):
+        # hits back from going out of bounds
+        if in_field[i]:
+            ball.position[i] = - ball.position[i]
 
 
 def CheckCollide():
     global ball
+
+    isGoal()  # Check if the ball is in the goal
 
     # Checks if in bounds for both x, y coordinates
     in_field = inBounds(ball)
     if in_field:
         # for both teams
         for player_side in [left_team.players, right_team.players]:
-            for player in player_side and in_field:
-                ball.position[1] += 1  # playerContact # TODO
+            for player in player_side:  # TODO
+                # Saves the hit made and adds it to the balls position
+                h = getHit(player)
+                ball.position[0] += h[0]
+                ball.position[1] += h[1]
         return
 
-    if in_field[0]:  # Jumps back the left and right sides
-        ball.position[0] = - ball.position[0]
-
-    if in_field[1]:  # Jumps back the top to bottom sides
-        ball.position[1] = - ball.position[1]
+    CheckIndividualSide(in_field)
 
 
 def initializeTeams():
@@ -494,10 +478,15 @@ def MainGame():
                 sys.exit()
 
         soccer = SoccerTeamPlayers.Teams
+
+        # Controller for player 1
         playerControlMovement(soccer.TEAM_ONE, left_team.players)
+
+        # Controller for player 2
         playerControlMovement(soccer.TEAM_TWO, right_team.players)
-        # robotMovement(soccer.TEAM_ONE)  # For AI
-        # robotMovement(soccer.TEAM_TWO)  # For AI
+
+        robotMovement(soccer.TEAM_ONE, left_team)  # For AI
+        robotMovement(soccer.TEAM_TWO, right_team)  # For AI
 
         CheckCollide()
 

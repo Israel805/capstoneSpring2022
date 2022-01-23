@@ -17,8 +17,8 @@ class States(Enum):
 
 
 class MovingPosition(Enum):
-    DEFENSE = FORWARD = 3
-    MIDDLE = 2
+    DEFENSE = 3
+    MIDDLE = FORWARD = 2
 
 
 class FieldSide(Enum):
