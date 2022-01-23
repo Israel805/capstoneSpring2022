@@ -68,8 +68,8 @@ class GoalPost:
 
 
 # Creates both circles for the intro
-player1 = Circle((half_width * .35, half_height * .95), WHITE, player_size)
-player2 = Circle((screen_width * .8, half_height * .95), GREEN, player_size)
+player1_color = Circle((half_width * .35, half_height * .95), WHITE, player_size)
+player2_color = Circle((screen_width * .8, half_height * .95), GREEN, player_size)
 
 # ! Draws the goal post on both sides on the field
 goal_xpos, goal_ypos = 10, half_height - 70
@@ -115,23 +115,24 @@ def isGoal():
     goal = False
     for index in range(len(goal_posts)):
         if goal_posts[index].object.collidepoint(ball.position):
-            score[(index + 1) % 1] += 1
+            score[index] += 1
             goal = True
 
-    if goal:
-        MainGame()  # Should restart the original position
-        return
-
-
-def inBounds(ply):
-    return ply.position[0] in range(ply.size, screen_width - ply.size), \
-           ply.position[1] in range(ply.size, screen_height - ply.size)
-
+    if goal:  # Should restart the original position
+        ball.position = [half_width, half_height]
+        num = 0
+        for pl in SoccerTeamPlayers.StartPositionLeft:
+            left_team.players[num].position = list(pl.value)
+            num += 1
+        num = 0
+        for pl in SoccerTeamPlayers.StartPositionRight:
+            right_team.players[num].position = list(pl.value)
+            num += 1
 
 playersOption = allColors
 # Removes the color already chosen by each player
-playersOption.remove(player1.color)
-playersOption.remove(player2.color)
+playersOption.remove(player1_color.color)
+playersOption.remove(player2_color.color)
 
 
 def OptionPage():
@@ -150,17 +151,17 @@ def displayOptions():
             space += 50
         return result
 
-    global player1, player2
+    global player1_color, player2_color
     for other_colors in makeOptions():
         color = other_colors.draw()
         # Makes sure its pressed and swaps the
         if isPressed(color):
-            if isPressed(player1.draw()):
-                player1.color, other_colors = other_colors, player1.color
+            if isPressed(player1_color.draw()):
+                player1_color.color, other_colors = other_colors, player1_color.color
                 print("Player 1 changed with " + other_colors)
 
-            if isPressed(player2.draw()):
-                player2.color, other_colors = other_colors, player2.color
+            if isPressed(player2_color.draw()):
+                player2_color.color, other_colors = other_colors, player2_color.color
                 print("Player 2 changed with " + other_colors)
 
 
@@ -198,7 +199,7 @@ def displayBothControls():
 
 
 def displayStartPage():
-    global player1, player2
+    global player1_color, player2_color
     screen.fill(PAGE_COLOR)  # Makes background
 
     # Displays the title
@@ -206,14 +207,14 @@ def displayStartPage():
     displayPlayerTitle()
 
     # Draws out both p1, p2 and other available options
-    player1.draw()
+    player1_color.draw()
     displayOptions()
-    player2.draw()
+    player2_color.draw()
     displayBothControls()
 
 
 def StartPage():
-    global player1, player2
+    global player1_color, player2_color
 
     # Creates a new button for the start button
     button_position = [half_width * .85, screen_height * .8]
@@ -435,7 +436,7 @@ def CheckCollide():
     isGoal()  # Check if the ball is in the goal
 
     # Checks if in bounds for both x, y coordinates
-    in_field = inBounds(ball)
+    in_field = SoccerTeamPlayers.inBounds(ball)
     if in_field:
         # for both teams
         for player_side in [left_team.players, right_team.players]:
@@ -451,8 +452,8 @@ def initializeTeams():
     # ! Creates the players on the screen
     # Displays the players on the screen for Both Side
     # Saves and displays the players on both sides
-    left_team = SoccerTeamPlayers.Team(SoccerTeamPlayers.Teams.TEAM_ONE, player1.color)
-    right_team = SoccerTeamPlayers.Team(SoccerTeamPlayers.Teams.TEAM_TWO, player2.color)
+    left_team = SoccerTeamPlayers.Team(SoccerTeamPlayers.Teams.TEAM_ONE, player1_color.color)
+    right_team = SoccerTeamPlayers.Team(SoccerTeamPlayers.Teams.TEAM_TWO, player2_color.color)
 
 
 def MainGame():
