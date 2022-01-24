@@ -21,6 +21,16 @@ pygame.time.set_timer(pygame.USEREVENT, 1000)
 MINS = 5
 counter = 60 * MINS  # 5 mins
 
+# TODO
+# # Starting the mixer
+# mixer.init()
+#
+# # Loading the song
+# mixer.music.load("song.mp3")
+#
+# # Setting the volume
+# mixer.music.set_volume(0.7)
+
 
 # Creates a label with default font or custom size
 def default_label(string, font_size=30, font_color=WHITE):
@@ -120,14 +130,12 @@ def isGoal():
 
     if goal:  # Should restart the original position
         ball.position = [half_width, half_height]
-        num = 0
-        for pl in SoccerTeamPlayers.StartPositionLeft:
-            left_team.players[num].position = list(pl.value)
-            num += 1
-        num = 0
-        for pl in SoccerTeamPlayers.StartPositionRight:
-            right_team.players[num].position = list(pl.value)
-            num += 1
+        for each_side in [SoccerTeamPlayers.StartPositionLeft, SoccerTeamPlayers.StartPositionRight]:
+            num = 0
+            for pl in each_side:
+                left_team.players[num].position = list(pl.value)
+                num += 1
+
 
 playersOption = allColors
 # Removes the color already chosen by each player
@@ -308,12 +316,6 @@ def GameResult():
         screen.blit(play_label, button_pos)
 
 
-def ScoreBoard():
-    screen.fill(PAGE_COLOR)  # Clears the screen
-    screen.blit(default_label("Score Board", 100), (half_width, 50))
-    # TODO: (Optional) Create a Table
-
-
 def displayScore():
     # ! Update scores
     # Displays the score board for both teams
@@ -413,7 +415,7 @@ def getHit(player):
         if arr[i] < -1:
             arr[i] = -1
 
-    return [5 * arr[x] for x in range(len(arr))] if playerContact(player) else [0, 0]
+    return [5 * arr[x] for x in range(len(arr))]
 
 
 def CheckIndividualSide(in_field):
@@ -423,11 +425,11 @@ def CheckIndividualSide(in_field):
             ball.position[i] = - ball.position[i]
 
 
-def move_ball(player):
+def move_ball(player): # TODO
     # Saves the hit made and adds it to the balls position
-    h = getHit(player)
-    ball.position[0] += h[0]
-    ball.position[1] += h[1]
+    w, h = getHit(player)
+    ball.position[0] += w
+    ball.position[1] += h
 
 
 def CheckCollide():
@@ -438,9 +440,9 @@ def CheckCollide():
     # Checks if in bounds for both x, y coordinates
     in_field = SoccerTeamPlayers.inBounds(ball)
     if in_field:
-        # for both teams
+        # for both teams, make the ball move
         for player_side in [left_team.players, right_team.players]:
-            [move_ball(player) for player in player_side]  # TODO
+            [move_ball(player) for player in player_side]
 
         return
 

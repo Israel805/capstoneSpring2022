@@ -21,7 +21,7 @@ def direction(obj1, obj2):
     return [x2 - x1, y2 - y1]
 
 
-def move(playr, dest, velocity=1):  # For AI
+def move(playr, dest, velocity=3):  # For AI
     for index in range(len(dest.position)):
         if dest.position[index] > playr.position[index]:
             playr.position[index] += velocity
@@ -93,8 +93,12 @@ def playingDefense(team_playing, selected_player, other_players, bounds=None):
 # get the ball from opponent if not in possession
 def playingMiddle(team_playing, selected_player, other_players):
     if team_playing is selected_player.team:
-        # pass to other player
-        pass_ball(selected_player, other_players)
+        if Playground.playerContact(selected_player):
+            # pass to other player
+            pass_ball(selected_player, other_players.players)
+        else:
+            move(selected_player, other_players.players[0])
+
         return
     playingDefense(team_playing, selected_player,
                    selected_player.position[0] in range(Playground.half_width - 100, Playground.half_width + 100))
@@ -104,7 +108,10 @@ def playingMiddle(team_playing, selected_player, other_players):
 def playingOffense(team_playing, selected_player, other_players):
     if team_playing is selected_player.team:
         # pass to other player or shoot
-        pass_ball(selected_player, other_players) if random.randint(0, 101) < 40 else shoot(selected_player)
+        if Playground.playerContact(selected_player):
+            pass_ball(selected_player, other_players) if random.randint(0, 101) < 40 else shoot(selected_player)
+        else:
+            move(selected_player, Playground.ball)
         return
 
     team_one = selected_player.team is SoccerTeamPlayers.Teams.TEAM_ONE
