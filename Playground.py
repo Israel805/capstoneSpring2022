@@ -3,7 +3,7 @@ import sys
 from pygame import *
 # General setup
 import SoccerTeamPlayers
-from AI import distance, direction, robotMovement
+from AI import distance, robotMovement
 
 WHITE = (255, 255, 255)
 PAGE_COLOR = BLACK = (0, 0, 0)
@@ -20,6 +20,7 @@ clock = pygame.time.Clock()
 pygame.time.set_timer(pygame.USEREVENT, 1000)
 MINS = 5
 counter = 60 * MINS  # 5 mins
+
 
 # TODO
 # # Starting the mixer
@@ -58,7 +59,7 @@ ball_size, player_size = 20, 25
 p1_num = p2_num = 0
 
 
-# Draws a circle on the screen
+# Draws a circle on the screen, and is able to move for each circle
 class Circle:
     def __init__(self, position, circle_color, circle_size=player_size):
         self.position = list(position)
@@ -67,14 +68,36 @@ class Circle:
     def draw(self, size=0):  # Additional size
         return pygame.draw.circle(screen, self.color, self.position, self.size, size)
 
+    def move(self, destination, velocity=3):  # for AI
+
+        if type(destination) is list:
+            while destination[0] > 0 or destination[1] > 0:
+                for x in range(len(destination)):
+                    if destination[x] > 0:
+                        self.position[x] += velocity
+                        destination[x] -= velocity
+            return
+
+        for index in range(len(destination.position)):
+            if destination.position[index] > self.position[index]:
+                self.position[index] += velocity
+
+            if destination.position[index] < self.position[index]:
+                self.position[index] -= velocity
+
 
 class GoalPost:
-    def __init__(self, goal_line, circle_color):
-        self.color = circle_color
+    def __init__(self, goal_line, circle_color, number):
+        self.color, self.goal_number = circle_color, number
         self.object = pygame.Rect(list(goal_line), goal_size)
 
     def draw(self):
         pygame.draw.rect(screen, self.color, self.object)
+
+    def isScored(self):
+        if self.object.collidepoint(ball.position):
+            score[self.goal_number] += 1
+            resetAllPositions()
 
 
 # Creates both circles for the intro
@@ -83,7 +106,8 @@ player2_color = Circle((screen_width * .8, half_height * .95), GREEN, player_siz
 
 # ! Draws the goal post on both sides on the field
 goal_xpos, goal_ypos = 10, half_height - 70
-goal_posts = [GoalPost((goal_xpos - 8, goal_ypos), WHITE), GoalPost((screen_width - goal_xpos - 2, goal_ypos), WHITE)]
+goal_posts = [GoalPost((goal_xpos - 8, goal_ypos), WHITE, 0),
+              GoalPost((screen_width - goal_xpos - 2, goal_ypos), WHITE, 1)]
 
 # The primary ball to score on
 ball = Circle(half_screen, RED, ball_size)
@@ -120,21 +144,13 @@ def playerControlMovement(play_team, teams):
     moveAllDirections(play_team, teams[num])
 
 
-def isGoal():
-    global ball, goal_posts
-    goal = False
-    for index in range(len(goal_posts)):
-        if goal_posts[index].object.collidepoint(ball.position):
-            score[index] += 1
-            goal = True
-
-    if goal:  # Should restart the original position
-        ball.position = [half_width, half_height]
-        for each_side in [SoccerTeamPlayers.StartPositionLeft, SoccerTeamPlayers.StartPositionRight]:
-            num = 0
-            for pl in each_side:
-                left_team.players[num].position = list(pl.value)
-                num += 1
+def resetAllPositions():
+    ball.position = [half_width, half_height]
+    for each_side in [SoccerTeamPlayers.StartPositionLeft, SoccerTeamPlayers.StartPositionRight]:
+        num = 0
+        for pl in each_side:
+            left_team.players[num].position = list(pl.value)
+            num += 1
 
 
 playersOption = allColors
@@ -325,6 +341,7 @@ def displayScore():
     for score_setup in display_setup:
         screen.blit(default_label(score_setup), position)
         position[0] += spacing[index]
+        index += 1
 
 
 def displayTime():
@@ -405,19 +422,6 @@ def playerContact(circle_player):
     return distance(circle_player, ball) < ball_size * 2
 
 
-def getHit(player):
-    # If any player collides with the ball push the ball with its velocity
-    arr = direction(player, ball)
-    for i in range(len(arr)):
-        if arr[i] > 1:
-            arr[i] = 1
-
-        if arr[i] < -1:
-            arr[i] = -1
-
-    return [5 * arr[x] for x in range(len(arr))]
-
-
 def CheckIndividualSide(in_field):
     for i in range(len(in_field)):
         # hits back from going out of bounds
@@ -425,24 +429,14 @@ def CheckIndividualSide(in_field):
             ball.position[i] = - ball.position[i]
 
 
-def move_ball(player): # TODO
-    # Saves the hit made and adds it to the balls position
-    w, h = getHit(player)
-    ball.position[0] += w
-    ball.position[1] += h
-
-
 def CheckCollide():
     global ball
-
-    isGoal()  # Check if the ball is in the goal
-
     # Checks if in bounds for both x, y coordinates
     in_field = SoccerTeamPlayers.inBounds(ball)
     if in_field:
         # for both teams, make the ball move
         for player_side in [left_team.players, right_team.players]:
-            [move_ball(player) for player in player_side]
+            [player.move_ball() for player in player_side]
 
         return
 
@@ -490,6 +484,9 @@ def MainGame():
 
         robotMovement(soccer.TEAM_ONE, left_team)  # For AI
         robotMovement(soccer.TEAM_TWO, right_team)  # For AI
+
+        # Check if the ball is in the goal
+        [goal_posts[x].isScored() for x in range(len(goal_posts))]
 
         CheckCollide()
 

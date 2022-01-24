@@ -1,8 +1,7 @@
 from enum import Enum
-
 import pygame
-
 import Playground
+from AI import direction
 
 
 class Teams(Enum):
@@ -62,6 +61,24 @@ class Player(Playground.Circle):
     def __init__(self, team, position, circle_color):
         super().__init__(position, circle_color)
         self.team = team
+
+    def getHit(self):
+        # If any player collides with the ball push the ball with its velocity
+        ball = Playground.ball
+        arr = direction(self, ball)
+        for i in range(len(arr)):
+            if arr[i] > 1:
+                arr[i] = 1
+
+            if arr[i] < -1:
+                arr[i] = -1
+
+        return [5 * arr[x] for x in range(len(arr))]
+
+    def move_ball(self):  # TODO
+        hit = self.getHit()
+        Playground.ball.position[0] += hit[0]
+        Playground.ball.position[1] += hit[1]
 
 
 def inBounds(ply):
