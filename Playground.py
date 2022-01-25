@@ -69,21 +69,21 @@ class Circle:
         return pygame.draw.circle(screen, self.color, self.position, self.size, size)
 
     def move(self, destination, velocity=3):  # for AI
-
         if type(destination) is list:
-            while destination[0] > 0 or destination[1] > 0:
+            while (destination[0] > 0 or destination[1] > 0) and SoccerTeamPlayers.inBounds(self):
                 for x in range(len(destination)):
                     if destination[x] > 0:
                         self.position[x] += velocity
                         destination[x] -= velocity
             return
 
-        for index in range(len(destination.position)):
-            if destination.position[index] > self.position[index]:
-                self.position[index] += velocity
+        while self.position is not destination and SoccerTeamPlayers.inBounds(self):
+            for index in range(len(destination.position)):
+                if destination.position[index] > self.position[index]:
+                    self.position[index] += velocity
 
-            if destination.position[index] < self.position[index]:
-                self.position[index] -= velocity
+                if destination.position[index] < self.position[index]:
+                    self.position[index] -= velocity
 
 
 class GoalPost:
@@ -157,6 +157,7 @@ playersOption = allColors
 # Removes the color already chosen by each player
 playersOption.remove(player1_color.color)
 playersOption.remove(player2_color.color)
+playersOption.remove(PAGE_COLOR)
 
 
 def OptionPage():
@@ -166,36 +167,31 @@ def OptionPage():
 def displayOptions():
     def makeOptions():
         # Collects all the colors available
-        result, space = [], .4
-        for color_choice in playersOption:
-            # Creates a new circle to display in intro, with specific color options
-            new_player = Circle((half_width + space - 15, screen_height * .7), color_choice)
-            # Adds it to list
-            result.append(new_player)
-            space += 50
+        result = [[], []]
+        for i in range(len(result)):
+            pos = player1_color.position if i == 0 else player2_color.position
+            position = [pos[0] - 35, pos[1] + 50]
+            for color_choice in playersOption:
+                # Creates a new circle to display in intro, with specific color options
+                new_player = Circle(position, color_choice, 15)
+                # Adds it to list
+                result[i].append(new_player)
+                position[0] += 35
         return result
 
     global player1_color, player2_color
-    for other_colors in makeOptions():
-        color = other_colors.draw()
-        # Makes sure its pressed and swaps the
-        if isPressed(color):
-            if isPressed(player1_color.draw()):
-                player1_color.color, other_colors = other_colors, player1_color.color
-                print("Player 1 changed with " + other_colors)
-
-            if isPressed(player2_color.draw()):
-                player2_color.color, other_colors = other_colors, player2_color.color
-                print("Player 2 changed with " + other_colors)
-
-
-def displayPlayerTitle():
-    prob = .25
-    cir_size = [half_width * prob, screen_height * .6]
-    # Creates a lambda function to insert new string with same format
-    screen.blit(default_label("Player 01"), cir_size)
-    cir_size[0] = screen_width * (1 - prob)
-    screen.blit(default_label("Player 02"), cir_size)
+    opts = makeOptions()
+    for i in range(len(opts)):
+        for other_colors in opts[i]:
+            color = other_colors.draw()
+            # Makes sure its pressed and swaps the
+            if isPressed(color):
+                if i == 0:
+                    player1_color.color, other_colors = other_colors, player1_color.color
+                    print("Player 1 changed with " + str(other_colors))
+                else:
+                    player2_color.color, other_colors = other_colors, player2_color.color
+                    print("Player 2 changed with " + str(other_colors))
 
 
 def displayBothControls():
@@ -223,6 +219,14 @@ def displayBothControls():
 
 
 def displayStartPage():
+    def displayPlayerTitle():
+        prob = .25
+        cir_size = [half_width * prob, screen_height * .6]
+        # Creates a lambda function to insert new string with same format
+        screen.blit(default_label("Player 01"), cir_size)
+        cir_size[0] = screen_width * (1 - prob)
+        screen.blit(default_label("Player 02"), cir_size)
+
     global player1_color, player2_color
     screen.fill(PAGE_COLOR)  # Makes background
 
@@ -332,64 +336,60 @@ def GameResult():
         screen.blit(play_label, button_pos)
 
 
-def displayScore():
-    # ! Update scores
-    # Displays the score board for both teams
-    display_setup = ["Player 1", str(score[0]), "-", str(score[1]), "Player 2"]
-    spacing, position = [150, 25, 25, 125, 0], [half_width - 250, 20]
-    index = 0
-    for score_setup in display_setup:
-        screen.blit(default_label(score_setup), position)
-        position[0] += spacing[index]
-        index += 1
-
-
-def displayTime():
-    # Displays the time for the Game
-    mins, sec = str(counter // 60), counter % 60
-    sec = ('0' if sec < 10 else '') + str(sec)
-    screen.blit(default_label("Time: " + mins + ":" + sec), (50, 20))
-
-
-def displayGoalSides(start_point):
-    # Draws the lines parallel to the goal
-    goal_line_vert, shift = 20, 8
-    goal_side = [goal_line_vert - shift, start_point], [goal_line_vert - shift, screen_width]
-    pygame.draw.aaline(screen, WHITE, list(goal_side[0]), list(goal_side[1]))
-
-    # Makes the first element in each list the inverse of the whole screen width
-    goal_side[0][0] = goal_side[1][0] = screen_width - goal_line_vert + shift
-    pygame.draw.aaline(screen, WHITE, list(goal_side[0]), list(goal_side[1]))
-
-
-def displayField(start_pos):
-    # Draws a vertical line in the middle of the screen
-    pygame.draw.aaline(screen, WHITE, (half_width, start_pos), (half_width, screen_width))
-    # Draws a horizontal line in the middle of the screen
-    pygame.draw.aaline(screen, WHITE, (0, start_pos), (screen_width, start_pos))
-    # Draws the circle of the field
-    Circle(half_screen, WHITE, 200).draw(3)
-
-
 def displayLayout():
+    def displayGoalAndPlayers():
+        global left_team, right_team, goal_posts
+        # ! Draws the goal post, left and right players
+        [goal.draw() for goal in goal_posts]
+
+        for player_side in [left_team.players, right_team.players]:
+            [player.draw() for player in player_side]
+
+    def displayScore():
+        # ! Update scores
+        # Displays the score board for both teams
+        display_setup = ["Player 1", str(score[0]), "-", str(score[1]), "Player 2"]
+        spacing, position = [150, 25, 25, 125, 0], [half_width - 250, 20]
+        index = 0
+        for score_setup in display_setup:
+            screen.blit(default_label(score_setup), position)
+            position[0] += spacing[index]
+            index += 1
+
+    def displayTime():
+        # Displays the time for the Game
+        mins, sec = str(counter // 60), counter % 60
+        sec = ('0' if sec < 10 else '') + str(sec)
+        screen.blit(default_label("Time: " + mins + ":" + sec), (50, 20))
+
+    def displayGoalSides():
+        # Draws the lines parallel to the goal
+        goal_line_vert, shift = 20, 8
+        goal_side = [goal_line_vert - shift, line_pos], [goal_line_vert - shift, screen_width]
+        pygame.draw.aaline(screen, WHITE, list(goal_side[0]), list(goal_side[1]))
+
+        # Makes the first element in each list the inverse of the whole screen width
+        goal_side[0][0] = goal_side[1][0] = screen_width - goal_line_vert + shift
+        pygame.draw.aaline(screen, WHITE, list(goal_side[0]), list(goal_side[1]))
+
+    def displayField():
+        # Draws a vertical line in the middle of the screen
+        pygame.draw.aaline(screen, WHITE, (half_width, line_pos), (half_width, screen_width))
+        # Draws a horizontal line in the middle of the screen
+        pygame.draw.aaline(screen, WHITE, (0, line_pos), (screen_width, line_pos))
+        # Draws the circle of the field
+        Circle(half_screen, WHITE, 200).draw(3)
+
     global ball
     line_pos = 75
-    displayField(line_pos)
-    displayGoalSides(line_pos)
+    displayGoalAndPlayers()
+    displayField()
+    displayGoalSides()
     displayTime()
     displayScore()
 
     # ! Red ball in the center
     ball.draw()
-
-
-def displayGoalAndPlayers():
-    global left_team, right_team, goal_posts
-    # ! Draws the goal post, left and right players
-    [goal.draw() for goal in goal_posts]
-
-    for player_side in [left_team.players, right_team.players]:
-        [player.draw() for player in player_side]
 
 
 def CountDownPage():
@@ -417,19 +417,13 @@ def CountDownPage():
         clock.tick(60)
 
 
-def playerContact(circle_player):
-    # Distance of the centers, radius of both circles
-    return distance(circle_player, ball) < ball_size * 2
-
-
-def CheckIndividualSide(in_field):
-    for i in range(len(in_field)):
-        # hits back from going out of bounds
-        if in_field[i]:
-            ball.position[i] = - ball.position[i]
-
-
 def CheckCollide():
+    def CheckIndividualSide():
+        for i in range(len(in_field)):
+            # hits back from going out of bounds
+            if in_field[i]:
+                ball.position[i] = - ball.position[i]
+
     global ball
     # Checks if in bounds for both x, y coordinates
     in_field = SoccerTeamPlayers.inBounds(ball)
@@ -437,19 +431,9 @@ def CheckCollide():
         # for both teams, make the ball move
         for player_side in [left_team.players, right_team.players]:
             [player.move_ball() for player in player_side]
-
         return
 
-    CheckIndividualSide(in_field)
-
-
-def initializeTeams():
-    global left_team, right_team
-    # ! Creates the players on the screen
-    # Displays the players on the screen for Both Side
-    # Saves and displays the players on both sides
-    left_team = SoccerTeamPlayers.Team(SoccerTeamPlayers.Teams.TEAM_ONE, player1_color.color)
-    right_team = SoccerTeamPlayers.Team(SoccerTeamPlayers.Teams.TEAM_TWO, player2_color.color)
+    CheckIndividualSide()
 
 
 def MainGame():
@@ -492,7 +476,6 @@ def MainGame():
 
         # Visuals
         screen.fill(PAGE_COLOR)
-        displayGoalAndPlayers()
         displayLayout()
 
         # ! Updating the window
@@ -502,6 +485,13 @@ def MainGame():
 
 
 def Main():
+    def initializeTeams():
+        global left_team, right_team
+        # ! Creates the players on the screen
+        # Displays the players on the screen for Both Side
+        # Saves and displays the players on both sides
+        left_team = SoccerTeamPlayers.Team(SoccerTeamPlayers.Teams.TEAM_ONE, player1_color.color)
+        right_team = SoccerTeamPlayers.Team(SoccerTeamPlayers.Teams.TEAM_TWO, player2_color.color)
     CountDownPage()
     initializeTeams()
     MainGame()
