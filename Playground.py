@@ -160,6 +160,11 @@ playersOption.remove(player2_color.color)
 playersOption.remove(PAGE_COLOR)
 
 
+def playerContact(circle_player):
+    # Distance of the centers, radius of both circles
+    return distance(circle_player, ball) < ball_size * 2
+
+
 def OptionPage():
     screen.fill(PAGE_COLOR)  # Clears the screen
 
@@ -492,6 +497,7 @@ def Main():
         # Saves and displays the players on both sides
         left_team = SoccerTeamPlayers.Team(SoccerTeamPlayers.Teams.TEAM_ONE, player1_color.color)
         right_team = SoccerTeamPlayers.Team(SoccerTeamPlayers.Teams.TEAM_TWO, player2_color.color)
+
     CountDownPage()
     initializeTeams()
     MainGame()
