@@ -82,7 +82,7 @@ class GoalPost:
             resetAllPositions()
 
 
-# Creates both circles for the intro
+# Creates both circles for the intro, the initial choice
 player1 = Circle((half_width * .35, half_height * .95), WHITE, player_size)
 player2 = Circle((screen_width * .8, half_height * .95), GREEN, player_size)
 
