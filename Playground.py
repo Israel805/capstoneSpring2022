@@ -3,7 +3,7 @@ import sys
 from pygame import *
 # General setup
 import SoccerTeamPlayers
-from AI import distance, robotMovement
+from AI import distance, direction, robotMovement
 
 WHITE = (255, 255, 255)
 PAGE_COLOR = BLACK = (0, 0, 0)
@@ -42,7 +42,6 @@ def default_label(string, font_size=30, font_color=WHITE):
 '''
 Trying to work the layout of the game
 Looks like this is a good idea of the digital layout
-
 Problem: how to move the ball with player, then AI
 '''
 
@@ -59,7 +58,7 @@ ball_size, player_size = 20, 25
 p1_num = p2_num = 0
 
 
-# Draws a circle on the screen, and is able to move for each circle
+# Draws a circle on the screen
 class Circle:
     def __init__(self, position, circle_color, circle_size=player_size):
         self.position = list(position)
@@ -68,27 +67,10 @@ class Circle:
     def draw(self, size=0):  # Additional size
         return pygame.draw.circle(screen, self.color, self.position, self.size, size)
 
-    def move(self, destination, velocity=3):  # for AI
-        if type(destination) is list:
-            while (destination[0] > 0 or destination[1] > 0) and SoccerTeamPlayers.inBounds(self):
-                for x in range(len(destination)):
-                    if destination[x] > 0:
-                        self.position[x] += velocity
-                        destination[x] -= velocity
-            return
-
-        while self.position is not destination and SoccerTeamPlayers.inBounds(self):
-            for index in range(len(destination.position)):
-                if destination.position[index] > self.position[index]:
-                    self.position[index] += velocity
-
-                if destination.position[index] < self.position[index]:
-                    self.position[index] -= velocity
-
 
 class GoalPost:
     def __init__(self, goal_line, circle_color, number):
-        self.color, self.goal_number = circle_color, number
+        self.color,self.goal_number = circle_color, number
         self.object = pygame.Rect(list(goal_line), goal_size)
 
     def draw(self):
@@ -101,8 +83,8 @@ class GoalPost:
 
 
 # Creates both circles for the intro
-player1_color = Circle((half_width * .35, half_height * .95), WHITE, player_size)
-player2_color = Circle((screen_width * .8, half_height * .95), GREEN, player_size)
+player1 = Circle((half_width * .35, half_height * .95), WHITE, player_size)
+player2 = Circle((screen_width * .8, half_height * .95), GREEN, player_size)
 
 # ! Draws the goal post on both sides on the field
 goal_xpos, goal_ypos = 10, half_height - 70
@@ -146,23 +128,25 @@ def playerControlMovement(play_team, teams):
 
 def resetAllPositions():
     ball.position = [half_width, half_height]
-    for each_side in [SoccerTeamPlayers.StartPositionLeft, SoccerTeamPlayers.StartPositionRight]:
-        num = 0
-        for pl in each_side:
-            left_team.players[num].position = list(pl.value)
-            num += 1
+    num = 0
+    for original_pos in SoccerTeamPlayers.StartPositionLeft:
+        left_team.players[num].position = list(original_pos.value)
+        num += 1
+    num = 0
+    for original_pos in SoccerTeamPlayers.StartPositionRight:
+        right_team.players[num].position = list(original_pos.value)
+        num += 1
+
+
+def inBounds(ply):
+    return ply.position[0] in range(ply.size, screen_width - ply.size), \
+           ply.position[1] in range(ply.size, screen_height - ply.size)
 
 
 playersOption = allColors
 # Removes the color already chosen by each player
-playersOption.remove(player1_color.color)
-playersOption.remove(player2_color.color)
-playersOption.remove(PAGE_COLOR)
-
-
-def playerContact(circle_player):
-    # Distance of the centers, radius of both circles
-    return distance(circle_player, ball) < ball_size * 2
+playersOption.remove(player1.color)
+playersOption.remove(player2.color)
 
 
 def OptionPage():
@@ -174,7 +158,7 @@ def displayOptions():
         # Collects all the colors available
         result = [[], []]
         for i in range(len(result)):
-            pos = player1_color.position if i == 0 else player2_color.position
+            pos = player1.position if i == 0 else player2.position
             position = [pos[0] - 35, pos[1] + 50]
             for color_choice in playersOption:
                 # Creates a new circle to display in intro, with specific color options
@@ -184,7 +168,6 @@ def displayOptions():
                 position[0] += 35
         return result
 
-    global player1_color, player2_color
     opts = makeOptions()
     for i in range(len(opts)):
         for other_colors in opts[i]:
@@ -192,10 +175,10 @@ def displayOptions():
             # Makes sure its pressed and swaps the
             if isPressed(color):
                 if i == 0:
-                    player1_color.color, other_colors = other_colors, player1_color.color
+                    player1.color, other_colors = other_colors, player1.color
                     print("Player 1 changed with " + str(other_colors))
                 else:
-                    player2_color.color, other_colors = other_colors, player2_color.color
+                    player2.color, other_colors = other_colors, player2.color
                     print("Player 2 changed with " + str(other_colors))
 
 
@@ -232,7 +215,7 @@ def displayStartPage():
         cir_size[0] = screen_width * (1 - prob)
         screen.blit(default_label("Player 02"), cir_size)
 
-    global player1_color, player2_color
+    global player1, player2
     screen.fill(PAGE_COLOR)  # Makes background
 
     # Displays the title
@@ -240,14 +223,14 @@ def displayStartPage():
     displayPlayerTitle()
 
     # Draws out both p1, p2 and other available options
-    player1_color.draw()
+    player1.draw()
     displayOptions()
-    player2_color.draw()
+    player2.draw()
     displayBothControls()
 
 
 def StartPage():
-    global player1_color, player2_color
+    global player1, player2
 
     # Creates a new button for the start button
     button_position = [half_width * .85, screen_height * .8]
@@ -422,6 +405,24 @@ def CountDownPage():
         clock.tick(60)
 
 
+def playerContact(circle_player):
+    # Distance of the centers, radius of both circles
+    return distance(circle_player, ball) <= ball_size * 2
+
+
+def getHit(player):
+    # If any player collides with the ball push the ball with its velocity
+    arr = direction(player, ball)
+    for i in range(len(arr)):
+        if arr[i] > 1:
+            arr[i] = 1
+
+        if arr[i] < -1:
+            arr[i] = -1
+
+    return [5 * arr[x] for x in range(len(arr))] if playerContact(player) else [0, 0]
+
+
 def CheckCollide():
     def CheckIndividualSide():
         for i in range(len(in_field)):
@@ -430,15 +431,23 @@ def CheckCollide():
                 ball.position[i] = - ball.position[i]
 
     global ball
+
+    # Check if the ball is in the goal
+    [goal_posts[x].isScored() for x in range(len(goal_posts))]
+
     # Checks if in bounds for both x, y coordinates
-    in_field = SoccerTeamPlayers.inBounds(ball)
+    in_field = inBounds(ball)
     if in_field:
-        # for both teams, make the ball move
+        # for both teams
         for player_side in [left_team.players, right_team.players]:
-            [player.move_ball() for player in player_side]
+            for player in player_side:  # TODO
+                # Saves the hit made and adds it to the balls position
+                h = getHit(player)
+                ball.position[0] += h[0]
+                ball.position[1] += h[1]
         return
 
-    CheckIndividualSide()
+    CheckIndividualSide(in_field)
 
 
 def MainGame():
@@ -474,9 +483,6 @@ def MainGame():
         robotMovement(soccer.TEAM_ONE, left_team)  # For AI
         robotMovement(soccer.TEAM_TWO, right_team)  # For AI
 
-        # Check if the ball is in the goal
-        [goal_posts[x].isScored() for x in range(len(goal_posts))]
-
         CheckCollide()
 
         # Visuals
@@ -495,8 +501,8 @@ def Main():
         # ! Creates the players on the screen
         # Displays the players on the screen for Both Side
         # Saves and displays the players on both sides
-        left_team = SoccerTeamPlayers.Team(SoccerTeamPlayers.Teams.TEAM_ONE, player1_color.color)
-        right_team = SoccerTeamPlayers.Team(SoccerTeamPlayers.Teams.TEAM_TWO, player2_color.color)
+        left_team = SoccerTeamPlayers.Team(SoccerTeamPlayers.Teams.TEAM_ONE, player1.color)
+        right_team = SoccerTeamPlayers.Team(SoccerTeamPlayers.Teams.TEAM_TWO, player2.color)
 
     CountDownPage()
     initializeTeams()
