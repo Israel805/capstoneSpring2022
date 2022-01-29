@@ -3,7 +3,7 @@ import sys
 from pygame import *
 # General setup
 import SoccerTeamPlayers
-from AI import direction, robotMovement, playerContact
+from AI import direction, robotMovement, playerContact, inBounds
 
 WHITE = (255, 255, 255)
 PAGE_COLOR = BLACK = (0, 0, 0)
@@ -83,8 +83,8 @@ class GoalPost:
 
 
 # Creates both circles for the intro, the initial choice
-player1 = Circle((half_width * .35, half_height * .95), WHITE, player_size)
-player2 = Circle((screen_width * .8, half_height * .95), GREEN, player_size)
+player1 = Circle((half_width * .35, screen_height * .6), WHITE, player_size)
+player2 = Circle((screen_width * .8, screen_height * .6), GREEN, player_size)
 
 # ! Draws the goal post on both sides on the field
 goal_xpos, goal_ypos = 10, half_height - 70
@@ -138,11 +138,13 @@ def resetAllPositions():
         num += 1
 
 
+playersOption = allColors
+# Removes the color already chosen by each player
+playersOption.remove(player1.color)
+playersOption.remove(player2.color)
+
+
 def displayOptions():
-    playersOption = allColors
-    # Removes the color already chosen by each player
-    playersOption.remove(player1.color)
-    playersOption.remove(player2.color)
 
     def makeOptions():
         # Collects all the colors available
@@ -184,7 +186,7 @@ def displayBothControls():
     instr = [" - move up", " - move down", " - move left", " - move right", " - boost"]
 
     # for player one instruction position
-    instruct_position = [half_width * .5, half_height * .6]
+    instruct_position = [half_width * .3, half_height * .6]
     i = 0
     for num in num_player:
         screen.blit(default_label(num), instruct_position)
@@ -192,25 +194,16 @@ def displayBothControls():
         displayInstruct(controller[i])
 
         # for player two instruction position
-        instruct_position = [half_width * 1.1, half_height * .6]
+        instruct_position = [half_width * 1.3, half_height * .6]
         i += 1
 
 
 def displayStartPage():
-    def displayPlayerTitle():
-        prob = .25
-        cir_size = [half_width * prob, screen_height * .6]
-        # Creates a lambda function to insert new string with same format
-        screen.blit(default_label("Player 01"), cir_size)
-        cir_size[0] = screen_width * (1 - prob)
-        screen.blit(default_label("Player 02"), cir_size)
-
     global player1, player2
     screen.fill(PAGE_COLOR)  # Makes background
 
     # Displays the title
     screen.blit(default_label("Welcome to Retro Soccer", 60), (half_width * 0.55, 30))
-    displayPlayerTitle()
 
     # Draws out both p1, p2 and other available options
     player1.draw()
@@ -225,7 +218,6 @@ def StartPage():
     # Creates a new button for the start button
     button_position = [half_width * .85, screen_height * .8]
     play_button = pygame.Rect(button_position, button_size)
-    button_position[1] += 50
 
     while True:
 
@@ -414,15 +406,15 @@ def CheckCollide():
     [goal_posts[x].isScored() for x in range(len(goal_posts))]
 
     # Checks if in bounds for both x, y coordinates
-    in_field = SoccerTeamPlayers.inBounds(ball)
+    in_field = inBounds(ball)
     if in_field:
         # for both teams
         for player_side in [left_team.players, right_team.players]:
-            for player in player_side:  # TODO
+            for player in player_side:
                 # Saves the hit made and adds it to the balls position
-                h = getHit(player)
-                ball.position[0] += h[0]
-                ball.position[1] += h[1]
+                w, h = getHit(player)
+                ball.position[0] += w
+                ball.position[1] += h
         return
 
     CheckIndividualSide()
@@ -437,7 +429,7 @@ def MainGame():
             if event.type == pygame.USEREVENT:
                 global counter
                 counter -= 1
-                if counter == -1:
+                if counter == 0:
                     return
 
             if event.type == pygame.QUIT:
@@ -457,7 +449,7 @@ def MainGame():
 
         CheckCollide()
 
-        if counter == 0:
+        if counter == 1:
             GameOverPage()
             return
 
