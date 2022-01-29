@@ -3,7 +3,7 @@ import sys
 from pygame import *
 # General setup
 import SoccerTeamPlayers
-from AI import distance, direction, robotMovement
+from AI import direction, robotMovement, playerContact
 
 WHITE = (255, 255, 255)
 PAGE_COLOR = BLACK = (0, 0, 0)
@@ -34,7 +34,7 @@ counter = 60 * MINS  # 5 mins
 
 
 # Creates a label with default font or custom size
-def default_label(string, font_size=30, font_color=WHITE):
+def default_label(string, font_size=50, font_color=WHITE):
     default_font = pygame.font.SysFont("Comic Sans MS", int(font_size))
     return default_font.render(str(string), True, font_color)
 
@@ -70,7 +70,7 @@ class Circle:
 
 class GoalPost:
     def __init__(self, goal_line, circle_color, number):
-        self.color,self.goal_number = circle_color, number
+        self.color, self.goal_number = circle_color, number
         self.object = pygame.Rect(list(goal_line), goal_size)
 
     def draw(self):
@@ -138,33 +138,23 @@ def resetAllPositions():
         num += 1
 
 
-def inBounds(ply):
-    return ply.position[0] in range(ply.size, screen_width - ply.size), \
-           ply.position[1] in range(ply.size, screen_height - ply.size)
-
-
-playersOption = allColors
-# Removes the color already chosen by each player
-playersOption.remove(player1.color)
-playersOption.remove(player2.color)
-
-
-def OptionPage():
-    screen.fill(PAGE_COLOR)  # Clears the screen
-
-
 def displayOptions():
+    playersOption = allColors
+    # Removes the color already chosen by each player
+    playersOption.remove(player1.color)
+    playersOption.remove(player2.color)
+
     def makeOptions():
         # Collects all the colors available
         result = [[], []]
-        for i in range(len(result)):
-            pos = player1.position if i == 0 else player2.position
+        for index in range(len(result)):
+            pos = player1.position if index == 0 else player2.position
             position = [pos[0] - 35, pos[1] + 50]
             for color_choice in playersOption:
                 # Creates a new circle to display in intro, with specific color options
                 new_player = Circle(position, color_choice, 15)
                 # Adds it to list
-                result[i].append(new_player)
+                result[index].append(new_player)
                 position[0] += 35
         return result
 
@@ -202,7 +192,7 @@ def displayBothControls():
         displayInstruct(controller[i])
 
         # for player two instruction position
-        instruct_position = [half_width * 1.2, half_height * .6]
+        instruct_position = [half_width * 1.1, half_height * .6]
         i += 1
 
 
@@ -219,7 +209,7 @@ def displayStartPage():
     screen.fill(PAGE_COLOR)  # Makes background
 
     # Displays the title
-    screen.blit(default_label("Welcome to Retro Soccer", 40), (half_width * 0.55, 30))
+    screen.blit(default_label("Welcome to Retro Soccer", 60), (half_width * 0.55, 30))
     displayPlayerTitle()
 
     # Draws out both p1, p2 and other available options
@@ -236,8 +226,6 @@ def StartPage():
     button_position = [half_width * .85, screen_height * .8]
     play_button = pygame.Rect(button_position, button_size)
     button_position[1] += 50
-    option_button = pygame.Rect(button_position, button_size)
-    button_position[1] -= 50
 
     while True:
 
@@ -250,8 +238,6 @@ def StartPage():
         # If clicked on the button, it will start the game
         if isPressed(play_button):
             Main()
-        if isPressed(option_button):
-            OptionPage()
 
         displayStartPage()
 
@@ -259,69 +245,66 @@ def StartPage():
         pygame.draw.rect(screen, WHITE, play_button)
         # Creates a text to go with the button
         play_label = default_label("Play", font_color=BLACK)
-        button_position[0] = half_width * .95
+        button_position[0] = half_width * .92
         screen.blit(play_label, button_position)
 
         pygame.display.flip()
 
 
 def GameOverPage():
+    def displayScoreFinal():
+        global score
+        score_position = player_pos = [20, half_height]
+        score_position[1] *= 1.05
+
+        # Displays the score sheet on the top of the screen
+        screen.blit(default_label("Player 1", 200), player_pos)
+        player_pos[0] = screen_width - player_pos[0]
+        screen.blit(default_label("Player 2", 200), player_pos)
+
+        for player_score in [str(score[0]), "-", str(score[1])]:
+            screen.blit(default_label(player_score, 200), score_position)
+
+    def chooseWinner():
+        # Determines a winner or a draw for the final income
+        title_position = [half_width, 50]
+        if score[0] == score[0]:
+            screen.blit(default_label("Draw", 200), title_position)
+        else:
+            screen.blit(default_label("Winner", 200), title_position)
+            title_position[1] += 100
+            screen.blit(default_label("Player 1" if score[0] > score[1] else "Player 2", 300), title_position)
+
+        displayScoreFinal()
+
+    def GameResult():
+        screen.fill(PAGE_COLOR)  # Clears the screen
+        chooseWinner()
+        # Creates a new button for the start button
+        button_pos = [half_width * .85, screen_height - 145]
+        button = pygame.Rect(button_pos, button_size)
+
+        while True:
+            # Handling input
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+
+            # If clicked on the button, it will start the game
+            if isPressed(button):
+                return
+
+            # Draws the rectangle button
+            pygame.draw.rect(screen, WHITE, button)
+            # Creates a text to go with the button
+            play_label = default_label("Continue", font_color=BLACK)
+            button_pos[0] = half_width * .95
+            screen.blit(play_label, button_pos)
+
     screen.fill(PAGE_COLOR)  # Clears the screen
     screen.blit(default_label("GAME OVER!", 100), half_screen)
     GameResult()
-
-
-def displayScoreFinal():
-    global score
-    score_position = player_pos = [20, half_height]
-    score_position[1] *= 1.05
-
-    # Displays the score sheet on the top of the screen
-    screen.blit(default_label("Player 1", 200), player_pos)
-    player_pos[0] = screen_width - player_pos[0]
-    screen.blit(default_label("Player 2", 200), player_pos)
-
-    for player_score in [str(score[0]), "-", str(score[1])]:
-        screen.blit(default_label(player_score, 200), score_position)
-
-
-def chooseWinner():
-    # Determines a winner or a draw for the final income
-    title_position = [half_width, 50]
-    if score[0] == score[0]:
-        screen.blit(default_label("Draw", 200), title_position)
-    else:
-        screen.blit(default_label("Winner", 200), title_position)
-        title_position[1] += 100
-        screen.blit(default_label("Player 1" if score[0] > score[1] else "Player 2", 300), title_position)
-
-    displayScoreFinal()
-
-
-def GameResult():
-    screen.fill(PAGE_COLOR)  # Clears the screen
-    chooseWinner()
-    # Creates a new button for the start button
-    button_pos = [half_width * .85, screen_height - 145]
-    button = pygame.Rect(button_pos, button_size)
-
-    while True:
-        # Handling input
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-
-        # If clicked on the button, it will start the game
-        if isPressed(button):
-            return
-
-        # Draws the rectangle button
-        pygame.draw.rect(screen, WHITE, button)
-        # Creates a text to go with the button
-        play_label = default_label("Continue", font_color=BLACK)
-        button_pos[0] = half_width * .95
-        screen.blit(play_label, button_pos)
 
 
 def displayLayout():
@@ -337,7 +320,7 @@ def displayLayout():
         # ! Update scores
         # Displays the score board for both teams
         display_setup = ["Player 1", str(score[0]), "-", str(score[1]), "Player 2"]
-        spacing, position = [150, 25, 25, 125, 0], [half_width - 250, 20]
+        spacing, position = [200, 25, 25, 125, 0], [half_width - 200, 20]
         index = 0
         for score_setup in display_setup:
             screen.blit(default_label(score_setup), position)
@@ -353,12 +336,12 @@ def displayLayout():
     def displayGoalSides():
         # Draws the lines parallel to the goal
         goal_line_vert, shift = 20, 8
-        goal_side = [goal_line_vert - shift, line_pos], [goal_line_vert - shift, screen_width]
-        pygame.draw.aaline(screen, WHITE, list(goal_side[0]), list(goal_side[1]))
+        goal_side1, goal_side2 = [goal_line_vert - shift, line_pos], [goal_line_vert - shift, screen_width]
+        pygame.draw.aaline(screen, WHITE, goal_side1, goal_side2)
 
         # Makes the first element in each list the inverse of the whole screen width
-        goal_side[0][0] = goal_side[1][0] = screen_width - goal_line_vert + shift
-        pygame.draw.aaline(screen, WHITE, list(goal_side[0]), list(goal_side[1]))
+        goal_side1[0] = goal_side2[0] = screen_width - goal_line_vert + shift
+        pygame.draw.aaline(screen, WHITE, goal_side1, goal_side2)
 
     def displayField():
         # Draws a vertical line in the middle of the screen
@@ -405,11 +388,6 @@ def CountDownPage():
         clock.tick(60)
 
 
-def playerContact(circle_player):
-    # Distance of the centers, radius of both circles
-    return distance(circle_player, ball) <= ball_size * 2
-
-
 def getHit(player):
     # If any player collides with the ball push the ball with its velocity
     arr = direction(player, ball)
@@ -436,7 +414,7 @@ def CheckCollide():
     [goal_posts[x].isScored() for x in range(len(goal_posts))]
 
     # Checks if in bounds for both x, y coordinates
-    in_field = inBounds(ball)
+    in_field = SoccerTeamPlayers.inBounds(ball)
     if in_field:
         # for both teams
         for player_side in [left_team.players, right_team.players]:
@@ -447,17 +425,11 @@ def CheckCollide():
                 ball.position[1] += h[1]
         return
 
-    CheckIndividualSide(in_field)
+    CheckIndividualSide()
 
 
 def MainGame():
-    global left_team, right_team, p1_num, p2_num
-    # TODO: Switches the player as it is pressed
-    if pygame.key.get_pressed()[K_e]:
-        p1_num += 1
-    if pygame.key.get_pressed()[K_SLASH]:
-        p2_num += 1
-
+    global left_team, right_team, p1_num, p2_num, counter
     while True:
 
         # Handling input
@@ -484,6 +456,10 @@ def MainGame():
         robotMovement(soccer.TEAM_TWO, right_team)  # For AI
 
         CheckCollide()
+
+        if counter == 0:
+            GameOverPage()
+            return
 
         # Visuals
         screen.fill(PAGE_COLOR)

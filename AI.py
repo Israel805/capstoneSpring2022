@@ -21,25 +21,31 @@ def direction(obj1, obj2):
     return [x2 - x1, y2 - y1]
 
 
+def playerContact(circle_player):
+    # Distance of the centers, radius of both circles
+    return distance(circle_player, Playground.ball) <= Playground.ball_size * 2
+
+
 def move(playr, dest, velocity=3):  # For AI
     in_bounds = SoccerTeamPlayers.inBounds(playr)
     if not in_bounds:
         return
 
-    # if type(dest) is list:
-    #     while (dest[0] > 0 or dest[1] > 0) and in_bounds:
-    #         for x in range(len(dest)):
-    #             if dest[x] > 0:
-    #                 playr.position[x] += velocity
-    #                 dest[x] -= velocity
-    #     return
+    if type(dest) is list:
+        # while (dest[0] > 0 or dest[1] > 0) and in_bounds:
+        for x in range(len(dest)):
+            if dest[x] > 0:
+                playr.position[x] += velocity
+                dest[x] -= velocity
+        return
 
     for index in range(len(dest.position)):
-        if dest.position[index] > playr.position[index]:
-            playr.position[index] += velocity
+        if SoccerTeamPlayers.inBounds(playr):
+            if dest.position[index] > playr.position[index]:
+                playr.position[index] += velocity
 
-        if dest.position[index] < playr.position[index]:
-            playr.position[index] -= velocity
+            if dest.position[index] < playr.position[index]:
+                playr.position[index] -= velocity
 
 
 def shoot(player):
@@ -47,7 +53,7 @@ def shoot(player):
     res = K_SPACE if left_side else K_x
 
     # pushes the ball to either side to make it 'shoot' in the goal
-    if pygame.key.get_pressed()[res] and Playground.playerContact(player):
+    if pygame.key.get_pressed()[res] and playerContact(player):
         Playground.ball.position[0] += 3 + random.randint(0, 3) * (1 if left_side else -1)
         Playground.ball.position[1] += (5 + random.randint(-3, 2)) * (1 if random.randint(0, 101) < 30 else -1)
 
@@ -64,7 +70,7 @@ def pass_ball(p1, p_n):
                 closest = player
         return closest
 
-    if Playground.playerContact(p1):
+    if playerContact(p1):
         move(Playground.ball, getClosestPlayer(p_n, p1))
 
 
@@ -85,7 +91,7 @@ def playingDefense(team_playing, selected_player, other_players, bounds=None):
                 move(selected_player, ball.position)
 
         # if ball in possession pass to teammate
-        if Playground.playerContact(selected_player):
+        if playerContact(selected_player):
             pass_ball(selected_player, other_players)
 
         # Returns to its original position from player
@@ -101,12 +107,12 @@ def playingDefense(team_playing, selected_player, other_players, bounds=None):
 # get the ball from opponent if not in possession
 def playingMiddle(team_playing, selected_player, other_players):
     if team_playing is selected_player.team:
-        if Playground.playerContact(selected_player):
+        if playerContact(selected_player):
             # pass to other player
             pass_ball(selected_player, other_players.players)
-        # else:
-        #     temp = (1 if selected_player.team is SoccerTeamPlayers.Teams.TEAM_ONE else -1)
-        #     move([random.randint(0, 10) * temp, random.randint(0, 20)])
+        else:
+            temp = (1 if selected_player.team is SoccerTeamPlayers.Teams.TEAM_ONE else -1)
+            move(selected_player, [random.randint(1, 10) * temp, random.randint(-1, 1)])
 
         return
     playingDefense(team_playing, selected_player,
@@ -117,14 +123,14 @@ def playingMiddle(team_playing, selected_player, other_players):
 def playingOffense(team_playing, selected_player, other_players):
     if team_playing is selected_player.team:
         # pass to other player or shoot
-        if Playground.playerContact(selected_player):
+        if playerContact(selected_player):
             if random.randint(0, 101) < 40:
                 pass_ball(selected_player, other_players)
             else:
                 shoot(selected_player)
-        else:
-            while selected_player.position is not Playground.ball.position:
-                move(selected_player,Playground.ball)
+        # else: # This was the problem
+        #     while selected_player.position is not Playground.ball.position:
+        #         move(selected_player,Playground.ball)
         return
 
     team_one = selected_player.team is SoccerTeamPlayers.Teams.TEAM_ONE

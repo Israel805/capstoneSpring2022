@@ -82,23 +82,28 @@ class Player(Playground.Circle):
 
 
 def inBounds(ply):
-    return ply.position[0] in range(ply.size, (w * 2) - ply.size), \
-           ply.position[1] in range(ply.size, (h * 2) - ply.size)
+    if type(ply) is list:
+        return ply[0] in range(75, (w * 2) - 75), ply[1] in range(75, (h * 2))
+
+    check = CheckMovement(ply.position, ply.size)
+    return check.isLeftBound() and check.isRightBound(), \
+           check.isUpperBound() and check.isLowerBound()
 
 
 # For player and AI use
 class CheckMovement:
     def __init__(self, position, size):
         self.position, self.size = position, size
+        self.sides = 20, 75
 
     def isLeftBound(self):
-        return self.position[0] > self.size
+        return self.position[0] > self.size + self.sides[0]
 
     def isRightBound(self):
-        return self.position[0] < Playground.screen_width - self.size
+        return self.position[0] < Playground.screen_width - self.size - self.sides[0]
 
     def isUpperBound(self):
-        return self.position[1] > 75 + self.size
+        return self.position[1] > self.size + self.sides[1]
 
     def isLowerBound(self):
         return self.position[1] < Playground.screen_height - self.size
