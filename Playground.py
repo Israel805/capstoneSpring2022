@@ -10,7 +10,7 @@ PAGE_COLOR = BLACK = (0, 0, 0)
 LIGHT_GREY = (200, 200, 200)
 RED = (255, 0, 0)
 GREEN = (0, 255, 0)
-allColors = [LIGHT_GREY, RED, GREEN, WHITE, BLACK]
+playersOption = [LIGHT_GREY, RED, GREEN, WHITE, BLACK]
 
 # Creates a new pygame
 pygame.init()
@@ -20,17 +20,6 @@ clock = pygame.time.Clock()
 pygame.time.set_timer(pygame.USEREVENT, 1000)
 MINS = 5
 counter = 60 * MINS  # 5 mins
-
-
-# TODO
-# # Starting the mixer
-# mixer.init()
-#
-# # Loading the song
-# mixer.music.load("song.mp3")
-#
-# # Setting the volume
-# mixer.music.set_volume(0.7)
 
 
 # Creates a label with default font or custom size
@@ -53,8 +42,7 @@ pygame.display.set_caption('Soccer Pong Game')
 # Creates global variables
 score, vel = [0, 0], 5
 half_screen = half_width, half_height = screen_width // 2, screen_height // 2
-button_size, goal_size = [150, 50], [10, 150]
-ball_size, player_size = 20, 25
+button_size, ball_size, player_size = [150, 50], 20, 25
 p1_num = p2_num = 0
 
 
@@ -71,6 +59,7 @@ class Circle:
 class GoalPost:
     def __init__(self, goal_line, circle_color, number):
         self.color, self.goal_number = circle_color, number
+        goal_size = [10, 150]
         self.object = pygame.Rect(list(goal_line), goal_size)
 
     def draw(self):
@@ -138,40 +127,17 @@ def resetAllPositions():
         num += 1
 
 
-playersOption = allColors
-# Removes the color already chosen by each player
-playersOption.remove(player1.color)
-playersOption.remove(player2.color)
-
-
 def displayOptions():
-
-    def makeOptions():
-        # Collects all the colors available
-        result = [[], []]
-        for index in range(len(result)):
-            pos = player1.position if index == 0 else player2.position
-            position = [pos[0] - 35, pos[1] + 50]
-            for color_choice in playersOption:
-                # Creates a new circle to display in intro, with specific color options
-                new_player = Circle(position, color_choice, 15)
-                # Adds it to list
-                result[index].append(new_player)
-                position[0] += 35
-        return result
-
-    opts = makeOptions()
-    for i in range(len(opts)):
-        for other_colors in opts[i]:
-            color = other_colors.draw()
+    for player in [player1, player2]:
+        position = [player.position[0] - 35, player.position[1] + 50]
+        for color_choice in playersOption:
+            # Creates a new circle to display in intro, with specific color options
+            new_player = Circle(position, color_choice, 15)
             # Makes sure its pressed and swaps the
-            if isPressed(color):
-                if i == 0:
-                    player1.color, other_colors = other_colors, player1.color
-                    print("Player 1 changed with " + str(other_colors))
-                else:
-                    player2.color, other_colors = other_colors, player2.color
-                    print("Player 2 changed with " + str(other_colors))
+            if isPressed(new_player.draw()):
+                player.color, new_player.color = new_player.color, player.color
+            position[0] += 35
+
 
 
 def displayBothControls():
@@ -229,7 +195,13 @@ def StartPage():
 
         # If clicked on the button, it will start the game
         if isPressed(play_button):
-            Main()
+            if player1.color is not player2.color:
+                Main()
+            else:
+                msg = "Can't have both teams with same colors"
+                label = default_label(msg, font_color=RED)
+                position = [half_width, screen_height * .65]
+                screen.blit(label, position)
 
         displayStartPage()
 
@@ -413,8 +385,11 @@ def CheckCollide():
             for player in player_side:
                 # Saves the hit made and adds it to the balls position
                 w, h = getHit(player)
-                ball.position[0] += w
-                ball.position[1] += h
+                a, b = inBounds(ball)
+                # if it hits the outer bounds it will stop from moving after it hits the bounds
+                ball.position[0] = (ball.position[0] + w) if a else (-ball.position[0])
+                ball.position[1] = (ball.position[1] + h) if b else (-ball.position[1])
+
         return
 
     CheckIndividualSide()
@@ -429,8 +404,6 @@ def MainGame():
             if event.type == pygame.USEREVENT:
                 global counter
                 counter -= 1
-                if counter == 0:
-                    return
 
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -444,12 +417,12 @@ def MainGame():
         # Controller for player 2
         playerControlMovement(soccer.TEAM_TWO, right_team.players)
 
-        robotMovement(soccer.TEAM_ONE, left_team)  # For AI
-        robotMovement(soccer.TEAM_TWO, right_team)  # For AI
+        # robotMovement(soccer.TEAM_ONE, left_team)  # For AI
+        # robotMovement(soccer.TEAM_TWO, right_team)  # For AI
 
         CheckCollide()
 
-        if counter == 1:
+        if counter == 0:
             GameOverPage()
             return
 
