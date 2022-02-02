@@ -51,16 +51,25 @@ class Circle:
     def __init__(self, position, circle_color, circle_size=player_size):
         self.position = list(position)
         self.color, self.size = circle_color, circle_size
+        self.velocity = vel
 
     def draw(self, size=0):  # Additional size
         return pygame.draw.circle(screen, self.color, self.position, self.size, size)
 
 
+class Ball(Circle):
+    def __init__(self, position, circle_color, circle_size):
+        super().__init__(position, circle_color, circle_size)
+
+    def placeBall(self, new_position):
+        self.position, self.velocity = new_position, 0
+
+
 class GoalPost:
     def __init__(self, goal_line, circle_color, number):
         self.color, self.goal_number = circle_color, number
-        goal_size = [10, 150]
-        self.object = pygame.Rect(list(goal_line), goal_size)
+        self.goal_size = [10, 150]
+        self.object = pygame.Rect(list(goal_line), self.goal_size)
 
     def draw(self):
         pygame.draw.rect(screen, self.color, self.object)
@@ -72,16 +81,16 @@ class GoalPost:
 
 
 # Creates both circles for the intro, the initial choice
-player1 = Circle((half_width * .35, screen_height * .6), WHITE, player_size)
-player2 = Circle((screen_width * .8, screen_height * .6), GREEN, player_size)
+player1 = Circle((half_width * .35, screen_height * .6), WHITE)
+player2 = Circle((screen_width * .8, screen_height * .6), GREEN)
 
 # ! Draws the goal post on both sides on the field
 goal_xpos, goal_ypos = 10, half_height - 70
-goal_posts = [GoalPost((goal_xpos - 8, goal_ypos), WHITE, 0),
-              GoalPost((screen_width - goal_xpos - 2, goal_ypos), WHITE, 1)]
+goal_posts = [GoalPost((goal_xpos * .2, goal_ypos), WHITE, 0),
+              GoalPost((screen_width - (goal_xpos * .8), goal_ypos), WHITE, 1)]
 
 # The primary ball to score on
-ball = Circle(half_screen, RED, ball_size)
+ball = Ball(half_screen, RED, ball_size)
 
 
 # Checks if the mouse is clicked and inbound of the button
@@ -116,7 +125,7 @@ def playerControlMovement(play_team, teams):
 
 
 def resetAllPositions():
-    ball.position = [half_width, half_height]
+    ball.placeBall([half_width, half_height])
     num = 0
     for original_pos in SoccerTeamPlayers.StartPositionLeft:
         left_team.players[num].position = list(original_pos.value)
@@ -127,44 +136,41 @@ def resetAllPositions():
         num += 1
 
 
-def displayOptions():
-    for player in [player1, player2]:
-        position = [player.position[0] - 35, player.position[1] + 50]
-        for color_choice in playersOption:
-            # Creates a new circle to display in intro, with specific color options
-            new_player = Circle(position, color_choice, 15)
-            # Makes sure its pressed and swaps the
-            if isPressed(new_player.draw()):
-                player.color, new_player.color = new_player.color, player.color
-            position[0] += 35
-
-
-
-def displayBothControls():
-    def displayInstruct(ctrl):
-        for x in range(len(ctrl)):
-            screen.blit(default_label(ctrl[x] + instr[x]), instruct_position)
-            instruct_position[1] += 30
-
-    # Creates both instruction controls for both teams
-    num_player = ["Player One", "Player Two"]
-    controller = ["W", "S", "A", "D", "Q"], ["^", "v", "<", ">", "P"]
-    instr = [" - move up", " - move down", " - move left", " - move right", " - boost"]
-
-    # for player one instruction position
-    instruct_position = [half_width * .3, half_height * .6]
-    i = 0
-    for num in num_player:
-        screen.blit(default_label(num), instruct_position)
-        instruct_position[1] += 30
-        displayInstruct(controller[i])
-
-        # for player two instruction position
-        instruct_position = [half_width * 1.3, half_height * .6]
-        i += 1
-
-
 def displayStartPage():
+    def displayOptions():
+        for player in [player1, player2]:
+            position = [player.position[0] - 35, player.position[1] + 50]
+            for color_choice in playersOption:
+                # Creates a new circle to display in intro, with specific color options
+                new_player = Circle(position, color_choice, 15)
+                # Makes sure its pressed and swaps the
+                if isPressed(new_player.draw()):
+                    player.color, new_player.color = new_player.color, player.color
+                position[0] += 35
+
+    def displayBothControls():
+        def displayInstruct(ctrl):
+            for x in range(len(ctrl)):
+                screen.blit(default_label(ctrl[x] + instr[x]), instruct_position)
+                instruct_position[1] += 30
+
+        # Creates both instruction controls for both teams
+        num_player = ["Player One", "Player Two"]
+        controller = ["W", "S", "A", "D", "Q"], ["^", "v", "<", ">", "P"]
+        instr = [" - move up", " - move down", " - move left", " - move right", " - boost"]
+
+        # for player one instruction position
+        instruct_position = [half_width * .3, half_height * .6]
+        i = 0
+        for num in num_player:
+            screen.blit(default_label(num), instruct_position)
+            instruct_position[1] += 30
+            displayInstruct(controller[i])
+
+            # for player two instruction position
+            instruct_position = [half_width * 1.3, half_height * .6]
+            i += 1
+
     global player1, player2
     screen.fill(PAGE_COLOR)  # Makes background
 
@@ -200,7 +206,7 @@ def StartPage():
             else:
                 msg = "Can't have both teams with same colors"
                 label = default_label(msg, font_color=RED)
-                position = [half_width, screen_height * .65]
+                position = [half_width, screen_height * .7]
                 screen.blit(label, position)
 
         displayStartPage()
@@ -362,16 +368,22 @@ def getHit(player):
         if arr[i] < -1:
             arr[i] = -1
 
-    return [5 * arr[x] for x in range(len(arr))] if playerContact(player) else [0, 0]
+    return [vel * arr[x] for x in range(len(arr))] if playerContact(player) else [0, 0]
+
+
+def moveBall(time):
+    # using scalar to vector formula x = ut + [(1/2 a t^2) = res]
+    friction = -3
+    ut = vel * float(time)
+    res = .5 * friction * time ** 2
+    # scalar_to_vector = res *
+    return
+
+
+# closest, recieving, and controlling player
 
 
 def CheckCollide():
-    def CheckIndividualSide():
-        for i in range(len(in_field)):
-            # hits back from going out of bounds
-            if in_field[i]:
-                ball.position[i] = - ball.position[i]
-
     global ball
 
     # Check if the ball is in the goal
@@ -379,7 +391,7 @@ def CheckCollide():
 
     # Checks if in bounds for both x, y coordinates
     in_field = inBounds(ball)
-    if in_field:
+    if in_field[0] and in_field[1]:
         # for both teams
         for player_side in [left_team.players, right_team.players]:
             for player in player_side:
@@ -387,12 +399,17 @@ def CheckCollide():
                 w, h = getHit(player)
                 a, b = inBounds(ball)
                 # if it hits the outer bounds it will stop from moving after it hits the bounds
-                ball.position[0] = (ball.position[0] + w) if a else (-ball.position[0])
-                ball.position[1] = (ball.position[1] + h) if b else (-ball.position[1])
+                ball.position[0] += w * (1 if a else -1)
+                ball.position[1] += h * (1 if b else -1)
+                # ball.position[0] = (ball.position[0] + w) if a else (-ball.position[0])
+                # ball.position[1] = (ball.position[1] + h) if b else (-ball.position[1])
 
         return
 
-    CheckIndividualSide()
+    for i in range(len(in_field)):
+        # hits back from going out of bounds
+        if in_field[i]:
+            ball.position[i] = - ball.position[i]
 
 
 def MainGame():
@@ -417,8 +434,8 @@ def MainGame():
         # Controller for player 2
         playerControlMovement(soccer.TEAM_TWO, right_team.players)
 
-        # robotMovement(soccer.TEAM_ONE, left_team)  # For AI
-        # robotMovement(soccer.TEAM_TWO, right_team)  # For AI
+        robotMovement(soccer.TEAM_ONE, left_team)  # For AI
+        robotMovement(soccer.TEAM_TWO, right_team)  # For AI
 
         CheckCollide()
 
@@ -442,8 +459,9 @@ def Main():
         # ! Creates the players on the screen
         # Displays the players on the screen for Both Side
         # Saves and displays the players on both sides
-        left_team = SoccerTeamPlayers.Team(SoccerTeamPlayers.Teams.TEAM_ONE, player1.color)
-        right_team = SoccerTeamPlayers.Team(SoccerTeamPlayers.Teams.TEAM_TWO, player2.color)
+        teams = SoccerTeamPlayers.Teams
+        left_team = SoccerTeamPlayers.Team(teams.TEAM_ONE, player1.color, goal_posts[0], goal_posts[1])
+        right_team = SoccerTeamPlayers.Team(teams.TEAM_TWO, player2.color, goal_posts[1], goal_posts[0])
 
     CountDownPage()
     initializeTeams()

@@ -43,23 +43,51 @@ class StartPositionLeft(Enum):
 
 
 class Team:
-    def __init__(self, team_num, player_color):
+    def __init__(self, team_num, player_color, homeGoal, opponent_Goal):
         self.team_number = Teams(team_num)
+        self.state = States.WAITING
         self.side = {Teams.TEAM_ONE: StartPositionLeft,
                      Teams.TEAM_TWO: StartPositionRight}.get(team_num)
         self.team_color = player_color
+        self.ownGoal, self.scoringGoal = homeGoal, opponent_Goal
 
         # Adds to the list the new player
         # Gets the initial value of the player
         # Uses same size, color and its specific position
-        self.players = [Player(self.team_number, soccer_player.value, player_color)
+        self.players = [Player(self.team_number, soccer_player.value, player_color, homeGoal, opponent_Goal)
                         for soccer_player in self.side]
 
 
 class Player(Playground.Circle):
-    def __init__(self, team, position, circle_color):
+    def __init__(self, team, position, circle_color, homeGoal, opponent_Goal):
         super().__init__(position, circle_color)
         self.team = team
+        self.max_speed = self.velocity * 1.5
+        self.state = States.WAITING
+        self.distanceToBall = -1
+        self.ownGoal, self.scoringGoal = homeGoal, opponent_Goal
+
+    def getGoalCenter(self):
+        return self.scoringGoal.center
+
+    def setDistanceToBall(self, distance):
+        self.distanceToBall = distance
+
+
+def changeStateForPlayer(currentPlayer):
+    if currentPlayer.state is States.ATTACKING:
+        currentPlayer.state = States.DEFENDING
+
+    if currentPlayer.state is States.DEFENDING:
+        currentPlayer.state = States.ATTACKING
+
+
+def changeStateForTeam(currentTeam):
+    if currentTeam.state is States.ATTACKING:
+        currentTeam.state = States.DEFENDING
+
+    if currentTeam.state is States.DEFENDING:
+        currentTeam.state = States.ATTACKING
 
 
 # For player and AI use
@@ -69,10 +97,10 @@ class CheckMovement:
         self.sides = 20, 75
 
     def isLeftBound(self):
-        return self.position[0] > self.size + self.sides[0]
+        return self.position[0] > self.size
 
     def isRightBound(self):
-        return self.position[0] < Playground.screen_width - self.size - self.sides[0]
+        return self.position[0] < Playground.screen_width - self.size
 
     def isUpperBound(self):
         return self.position[1] > self.size + self.sides[1]
