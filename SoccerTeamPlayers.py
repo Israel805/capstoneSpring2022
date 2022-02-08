@@ -8,10 +8,7 @@ class Teams(Enum):
 
 
 class States(Enum):
-    WAITING = 0
-    DEFENDING = 1
-    ATTACKING = 2
-    ASSISTING = 3
+    WAITING, DEFENDING, ATTACKING, ASSISTING = [i for i in range(4)]
 
 
 class MovingPosition(Enum):
@@ -57,37 +54,55 @@ class Team:
         self.players = [Player(self.team_number, soccer_player.value, player_color, homeGoal, opponent_Goal)
                         for soccer_player in self.side]
 
+    def setState(self, state):  # other way to set all players to be the same state
+        self.state = state
+        for i in range(len(self.players)):
+            self.players[i].setState(state)
+
+    def resetPosition(self):
+        for x in range(len(self.players)):
+            self.players[x].position = self.side[x].value
+
+    def changeStateForTeam(self):
+        state = States.ATTACKING if self.state is States.DEFENDING else States.DEFENDING
+        self.setState(state)
+
 
 class Player(Playground.Circle):
     def __init__(self, team, position, circle_color, homeGoal, opponent_Goal):
         super().__init__(position, circle_color)
         self.team = team
+        self.velocity = 5
         self.max_speed = self.velocity * 1.5
         self.state = States.WAITING
         self.distanceToBall = -1
+        self.closePlayers = []
         self.ownGoal, self.scoringGoal = homeGoal, opponent_Goal
 
     def getGoalCenter(self):
-        return self.scoringGoal.center
+        return self.scoringGoal.getGoalCenter()
+
+    def setState(self, state):
+        self.state = state
 
     def setDistanceToBall(self, distance):
         self.distanceToBall = distance
 
+    def addClosePlayer(self, player):
+        self.closePlayers.append(player)
 
-def changeStateForPlayer(currentPlayer):
-    if currentPlayer.state is States.ATTACKING:
-        currentPlayer.state = States.DEFENDING
+    def isSafeToReceive(self):
+        length = len(self.closePlayers)
+        if length == 0:
+            return True
+        for x in range(length):
+            if self.closePlayers[x].team is not self.team:
+                return False
+        return True
 
-    if currentPlayer.state is States.DEFENDING:
-        currentPlayer.state = States.ATTACKING
-
-
-def changeStateForTeam(currentTeam):
-    if currentTeam.state is States.ATTACKING:
-        currentTeam.state = States.DEFENDING
-
-    if currentTeam.state is States.DEFENDING:
-        currentTeam.state = States.ATTACKING
+    def changeStateForPlayer(self):
+        state = States.ATTACKING if self.state is States.DEFENDING else States.DEFENDING
+        self.setState(state)
 
 
 # For player and AI use
@@ -97,10 +112,14 @@ class CheckMovement:
         self.sides = 20, 75
 
     def isLeftBound(self):
-        return self.position[0] > self.size
+        goal_post = Playground.goal_posts[0]  # Assume both is the same vertical range
+        return self.position[1] not in range(goal_post.getLeftSide(), goal_post.getRightSide()) \
+               and self.position[0] > self.size
 
     def isRightBound(self):
-        return self.position[0] < Playground.screen_width - self.size
+        goal_post = Playground.goal_posts[0]  # Assume both is the same vertical range
+        return self.position[1] not in range(goal_post.getLeftSide(), goal_post.getRightSide()) and \
+               self.position[0] < Playground.screen_width - self.size
 
     def isUpperBound(self):
         return self.position[1] > self.size + self.sides[1]
