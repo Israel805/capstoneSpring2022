@@ -9,8 +9,9 @@ WHITE = (255, 255, 255)
 PAGE_COLOR = BLACK = (0, 0, 0)
 LIGHT_GREY = (200, 200, 200)
 RED = (255, 0, 0)
+YELLOW = (255, 255, 0)
+BLUE = (0, 0, 255)
 GREEN = (0, 255, 0)
-playersOption = [LIGHT_GREY, RED, GREEN, WHITE, BLACK]
 
 # Creates a new pygame
 pygame.init()
@@ -165,18 +166,17 @@ def resetAllPositions():
         team.setState(SoccerTeamPlayers.States.WAITING)
 
 
-def displayStartPage():
-    def displayOptions():
-        for player in [player1, player2]:
-            position = [player.position[0] - 35, player.position[1] + 50]
-            for color_choice in playersOption:
-                # Creates a new circle to display in intro, with specific color options
-                new_player = Circle(position, color_choice, 15)
-                # Makes sure its pressed and swaps the
-                if isPressed(new_player.draw()):
-                    player.color, new_player.color = new_player.color, player.color
-                position[0] += 35
+def displayColorOptions(circle, position):
+    for color_choice in [LIGHT_GREY, RED, GREEN, YELLOW, BLUE, WHITE, BLACK]:
+        # Creates a new circle to display in intro, with specific color options
+        new_player = Circle(position, color_choice, 15)
+        # Makes sure its pressed and swaps the
+        if isPressed(new_player.draw()):
+            circle.color, new_player.color = new_player.color, circle.color
+        position[0] += 35
 
+
+def displayStartPage():
     def displayBothControls():
         def displayInstruct(ctrl):
             for x in range(len(ctrl)):
@@ -189,7 +189,7 @@ def displayStartPage():
         instr = [" - move up", " - move down", " - move left", " - move right", " - boost"]
 
         # for player one instruction position
-        instruct_position = [half_width * .3, half_height * .6]
+        instruct_position = [half_width * .2, half_height * .6]
         i = 0
         for num in num_player:
             screen.blit(default_label(num), instruct_position)
@@ -197,7 +197,7 @@ def displayStartPage():
             displayInstruct(controller[i])
 
             # for player two instruction position
-            instruct_position = [half_width * 1.3, half_height * .6]
+            instruct_position = [half_width * 1.4, half_height * .6]
             i += 1
 
     global player1, player2
@@ -208,9 +208,47 @@ def displayStartPage():
 
     # Draws out both p1, p2 and other available options
     player1.draw()
-    displayOptions()
+
+    for player in [player1, player2]:
+        position = [player.position[0] - 70, player.position[1] + 50]
+        displayColorOptions(player, position)
+
     player2.draw()
     displayBothControls()
+
+
+def displayTimeOption(button_pos):
+    global counter
+    button = [button_pos[0] * 0.85, button_pos[1] * .8]
+    screen.blit(default_label("Time: ", font_size=40), button)
+    button[0] = button_pos[0] + 20
+    screen.blit(default_label(str(counter // 60) + " mins", font_size=40), button)
+
+    button = [button_pos[0] * .6, button_pos[1] * .9]
+    options = ["5 mins", "10 mins", "15 mins", "20 mins", "25 mins"]
+
+    option_button = []
+    for index in range(len(options)):
+        option_button.append(pygame.Rect(button, [50, 20]))
+        if isPressed(option_button[index]):
+            new_time = 5 + (index * 5)
+            counter = 60 * new_time
+        pygame.draw.rect(screen, BLACK, option_button[index])
+        screen.blit(default_label(options[index], font_size=30), button)
+        button[0] += 100
+
+
+def warning():
+    position = [half_width, screen_height * .85]
+    screen.blit(default_label("Can't have both teams with same colors!", font_size=40, font_color=RED), position)
+
+
+def displayBallOptions():
+    pos = [ball.position[0] * .95, ball.position[1] * .75]
+    screen.blit(default_label("Ball"), pos)
+    ball.draw()
+    pos = [ball.position[0] * .8, screen_height * .6]
+    displayColorOptions(ball, pos)
 
 
 def StartPage():
@@ -231,14 +269,13 @@ def StartPage():
         # If clicked on the button, it will start the game
         if isPressed(play_button):
             if player1.color is not player2.color:
-                Main()
-            else:
-                msg = "Can't have both teams with same colors"
-                label = default_label(msg, font_color=RED)
-                position = [half_width, screen_height * .7]
-                screen.blit(label, position)
+                if ball.color not in [player1.color, player2.color]:
+                    Main()
+        warning()
 
         displayStartPage()
+        displayTimeOption(button_position)
+        displayBallOptions()
 
         # Draws the rectangle button
         pygame.draw.rect(screen, WHITE, play_button)
@@ -417,6 +454,8 @@ def moveBall(time):
     scalar_to_vector = half_res * direction(0, vel)
 
     return ball.position + ut + scalar_to_vector
+
+
 # # Idea to use \ end
 
 
@@ -427,7 +466,7 @@ def CheckCollide():
     [goal_posts[x].isScored() for x in range(len(goal_posts))]
 
     # Checks if in bounds for both x, y coordinates
-    in_field = inBounds(ball.position)
+    in_field = inBounds(ball)
     if in_field:
         # for both teams
         for player_side in [left_team.players, right_team.players]:
