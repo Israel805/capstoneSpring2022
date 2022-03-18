@@ -5,6 +5,18 @@ import AI
 from Playground import *
 
 
+# # Idea to use
+def moveBall(time):
+    # using scalar to vector formula x = ut + [(1/2 a t^2) = res]
+    ut = vel * float(time)
+    half_res = .5 * friction * time ** 2
+    # turn the scalar quantity into a vector by multiplying the value with
+    #   the normalized velocity vector (because that gives the direction)
+    scalar_to_vector = half_res * direction(0, vel)
+
+    return ball.position + ut + scalar_to_vector
+
+
 def shoot(player):
     left_side = player.team is SoccerTeamPlayers.Teams.TEAM_ONE
     res = K_SPACE if left_side else K_x

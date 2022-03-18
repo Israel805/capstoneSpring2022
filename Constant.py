@@ -1,6 +1,5 @@
 # The display
 from enum import Enum
-
 import pygame
 
 # Screen format

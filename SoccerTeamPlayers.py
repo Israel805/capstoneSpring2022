@@ -6,9 +6,9 @@ from abstractbrain import *
 
 
 class Team:
-    def __init__(self, team_num, player_color, brain: AbstractBrain, homeGoal, opponent_Goal):
+    def __init__(self, team_num, player_color, homeGoal, opponent_Goal):
         self.team_number = Teams(team_num)
-        self.brain = brain
+        self.brain = None
         self.state = States.WAITING
         self.side = starting_position.get(team_num)
         self.team_color = player_color
@@ -68,9 +68,6 @@ class Player(Circle):
 
     def kick(self, velocity=vel):  # adds a velocity to the object to move it
         self.velocity = np.add(self.velocity, velocity)
-
-    def move(self):  # Adds the velocity to the position
-        self.position = np.add(self.position, self.velocity)
 
     def setDistanceToBall(self, new_distance):
         self.distanceToBall = new_distance
