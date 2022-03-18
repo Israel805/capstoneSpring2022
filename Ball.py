@@ -1,9 +1,8 @@
 import random
 from math import sqrt
-from pygame import *
-import Playground
-import SoccerTeamPlayers
+
 import AI
+from Playground import *
 
 
 def shoot(player):
@@ -13,11 +12,11 @@ def shoot(player):
     AI.getAvailableSpots()
     opponentsGoalPost = player.scoringGoal
     # Finds how many spots the ball can fit in order to score correctly
-    numAttempts = opponentsGoalPost.getLen() // (Playground.ball_size * 2)
+    numAttempts = opponentsGoalPost.getLen() // (ball_size * 2)
     while numAttempts > 0:
         target = list(opponentsGoalPost.getGoalCenter())
         # pushes the ball to either side to make it 'shoot' in the goal
-        the_ball = Playground.ball
+        the_ball = ball
         # Randomizes between the space available to score in the opponents goal
         minYValue = maxYValue = (-1 if left_side else -1)
         minYValue *= opponentsGoalPost.getLeftSide() + the_ball.getSize()
@@ -32,9 +31,9 @@ def shoot(player):
 def closestToBall():
     closest_to_the_ball = None
 
-    for player in [teams for teams in [Playground.left_team, Playground.right_team]]:
+    for player in [teams for teams in [left_team, right_team]]:
         # calculate the dist,using squared value
-        dist = AI.distance(player, Playground.ball) ** 2
+        dist = AI.distance(player, ball) ** 2
 
         # Records the distance for each player
         player.setDistanceToBall(dist)
@@ -60,29 +59,29 @@ def TimeCoverDistance(pos1, pos2, force):
 
     # calculate s (the distance between the two positions)
     coveredDist = AI.distance(pos1, pos2)
-    term = speed ** 2 + float(2 * coveredDist * AI.friction)
+    term = speed ** 2 + float(2 * coveredDist * friction)
 
     # it IS possible for the ball to reach B and we know its speed when it
     #   gets there, so now it's easy to calculate the time using the equation
-    return -1 if term <= 0.0 else ((sqrt(term) - speed) / AI.friction)
+    return -1 if term <= 0.0 else ((sqrt(term) - speed) / friction)
 
 
 def getBestPassToReceive(current_player, player, target, power):
-    time = TimeCoverDistance(Playground.ball.position, player.position, power)
+    time = TimeCoverDistance(ball.position, player.position, power)
 
     if time < 0: return False
 
     interceptRange = time * player.max_speed
     interceptRange *= 0.3  # scalar factor
     interceptPoint1 = interceptPoint2 = []
-    AI.getTangentPoints(player.position, interceptRange, Playground.ball.position, )
+    AI.getTangentPoints(player.position, interceptRange, ball.position, )
 
 
 def pass_ball(p1, p_n):
     def getClosestPlayer(current_player, receiver, passTarget, power, minPassDistance):
         closestToGoal = target = None
         # Looks for each player in their team to pass to
-        team = Playground.left_team if current_player.teams is SoccerTeamPlayers.Teams.TEAM_ONE else Playground.left_team
+        team = left_team if current_player.teams is SoccerTeamPlayers.Teams.TEAM_ONE else left_team
         for player in team:
             if player is not current_player and \
                     AI.distance(current_player, player) > minPassDistance ** 2:

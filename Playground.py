@@ -1,17 +1,13 @@
-import pygame
-import sys
+from random import shuffle, random
+import numpy as np
 from pygame import *
+
 # General setup
 import SoccerTeamPlayers
-from AI import direction, robotMovement, inBounds, distance
-
-WHITE = (255, 255, 255)
-PAGE_COLOR = BLACK = (0, 0, 0)
-LIGHT_GREY = (200, 200, 200)
-RED = (255, 0, 0)
-YELLOW = (255, 255, 0)
-BLUE = (0, 0, 255)
-GREEN = (0, 255, 0)
+from AI import direction, distance
+from Constant import *
+from brains.BehindAndTowards import BehindAndTowards
+from brains.DefendersAndAttackers import DefendersAndAttackers
 
 # Creates a new pygame
 pygame.init()
@@ -19,49 +15,121 @@ pygame.init()
 # Creates a new clock timer
 clock = pygame.time.Clock()
 pygame.time.set_timer(pygame.USEREVENT, 1000)
-MINS = 5
-counter = 60 * MINS  # 5 mins
 
 left_team = right_team = 0
 walls = []
-
-
-# Creates a label with default font or custom size
-def default_label(string, font_size=50, font_color=WHITE):
-    default_font = pygame.font.SysFont("Comic Sans MS", int(font_size))
-    return default_font.render(str(string), True, font_color)
-
-
-'''
-Trying to work the layout of the game
-Looks like this is a good idea of the digital layout
-Problem: how to move the ball with player, then AI
-'''
-
+flags = DOUBLEBUF
 # ! Setting up the main window
-screen_width, screen_height = 1080, 768
-screen = pygame.display.set_mode((screen_width, screen_height))
-pygame.display.set_caption('Soccer Pong Game')
+screen = pygame.display.set_mode((screen_width, screen_height), flags, 16)
+pygame.display.set_caption(MAIN_TITLE)
 
 # Creates global variables
-score, vel = [0, 0], 5
-half_screen = half_width, half_height = screen_width // 2, screen_height // 2
-button_size, ball_size, player_size = [150, 50], 20, 25
-p1_num = p2_num = 0
+score = [0, 0]
 
 
 # Draws a circle on the screen
 class Circle:
     def __init__(self, position, circle_color, circle_size=player_size):
-        self.position = list(position)
+        self.position = np.array(position)
         self.color, self.size = circle_color, circle_size
-        self.velocity = vel
+        self.velocity = self.acceleration = np.array(ZERO_MATRIX)
 
-    def getLocation(self):
+    def getLocation(self):  # returns the position of the circle
         return self.position
 
     def draw(self, size=0):  # Additional size
         return pygame.draw.circle(screen, self.color, self.position, self.size, size)
+
+    def set_pos_vel(self, body):  # sets the position and the velocity
+        self.position = body.position
+        self.velocity = body.velocity
+
+    # Applies the acceleration and adds it to the velocity
+    def apply_acceleration(self, acceleration: np.array):
+        self.acceleration = acceleration
+        self.velocity = np.add(self.velocity, self.acceleration)
+
+    def normal_velocity(self):  # makes velocity normalized
+        return np.linalg.norm(self.velocity)
+
+    # Checks if circle is hitting the wall and bounce off the wall
+    def bounce_wall(self):
+        check = SoccerTeamPlayers.CheckMovement(list(self.position), self.size)
+        leftBound = check.isLeftBound() and self.velocity[0] < 0
+        right_bound = check.isRightBound() and self.velocity[0] > 0
+        if leftBound or right_bound:
+            self.velocity[0] = -self.velocity[0]
+
+        upperBound = check.isUpperBound() and self.velocity[1] < 0
+        lowerBound = check.isLowerBound() and self.velocity[1] > 0
+        if upperBound or lowerBound:
+            self.velocity[1] = -self.velocity[1]
+
+    # Finds any detection from the overlap and if it is towards
+    def detect_collision(self, obj):
+        posDiff = np.subtract(self.position, obj.position)
+        dist_squared = np.dot(posDiff, posDiff)
+        overlap = dist_squared <= (self.size + obj.size) ** 2
+
+        posPlusVel1, posPlusVel2 = np.add(self.position, self.velocity), np.add(obj.position, obj.velocity)
+        dist2 = np.linalg.norm(np.subtract(posPlusVel1, posPlusVel2))
+        towards = dist2 ** 2 < dist_squared
+
+        return overlap and towards
+
+    # Calculates the collision (uses detect_collision)
+    def calculate_collision(self, thing2):
+        thing1 = self
+        if not thing1.detect_collision(thing2):
+            return thing1
+
+        pos1, pos2 = thing1.position, thing2.position
+        vel1, vel2 = thing1.velocity, thing2.velocity
+        mass1, mass2 = thing1.size ** 2, thing2.size ** 2
+
+        posDiff, velDiff = np.subtract(pos1, pos2), np.subtract(vel1, vel2)
+
+        dot_product = np.dot(velDiff, posDiff)
+        norm_squared = np.inner(posDiff, posDiff)
+
+        thing1.velocity = vel1 - (2 * mass2 / (mass1 + mass2)) * (dot_product / norm_squared * posDiff)
+        return thing1
+
+
+class PhyState:
+    def __init__(self, maxX, maxY):
+        self.bodies, self.ticks = [], 0
+        self.maxX, self.maxY = maxX, maxY
+
+    def start(self):
+        for player_side in [left_team.players, right_team.players]:
+            for player in player_side:
+                self.bodies.append(player)
+        self.bodies.append(ball)
+
+    def tick(self):
+        self.ticks = self.ticks + 1
+
+        new_bodies = []
+        for b1 in self.bodies:
+            new_body = b1
+            for b2 in self.bodies:
+                if b1 != b2:
+                    new_body = new_body.calculate_collision(b2)
+            new_body.bounce_wall()
+            new_bodies.append(new_body)
+            new_body.move()
+
+        for i in range(len(self.bodies)):
+            self.bodies[i].set_pos_vel(new_bodies[i])
+
+        shuffle(self.bodies)
+
+    def clear(self):
+        self.bodies = []
+
+
+state = PhyState(screen_width, screen_height)
 
 
 def playerContact(circle_player):
@@ -89,11 +157,7 @@ class Ball(Circle):
 class GoalPost:
     def __init__(self, goal_line, circle_color, number):
         self.color, self.goal_number = circle_color, number
-        self.goal_size = [10, 150]
-        self.object = pygame.Rect(list(goal_line), self.goal_size)
-
-    def getLen(self):
-        return self.goal_size[1]
+        self.object = pygame.Rect(list(goal_line), goal_size)
 
     def getGoalCenter(self):
         return self.object.center
@@ -118,12 +182,92 @@ player1 = Circle((half_width * .35, screen_height * .6), WHITE)
 player2 = Circle((screen_width * .8, screen_height * .6), GREEN)
 
 # ! Draws the goal post on both sides on the field
-goal_xpos, goal_ypos = 10, half_height - 70
-goal_posts = [GoalPost((goal_xpos * .2, goal_ypos), WHITE, 0),
-              GoalPost((screen_width - (goal_xpos * .8) - 3, goal_ypos), WHITE, 1)]
+goal_posts = [GoalPost((goal_xpos * .2, goal_ypos), WHITE, 0), GoalPost((screen_width -
+                                                                         (goal_xpos * .8) - 3, goal_ypos), WHITE, 1)]
 
 # The primary ball to score on
 ball = Ball(half_screen, RED, ball_size)
+
+
+def limit_velocities():
+    ball_velocity = ball.normal_velocity()
+
+    if ball_velocity > max_ball_velocity:
+        ball.velocity = np.multiply(ball.velocity, max_ball_velocity / ball_velocity)
+
+    for t in [left_team, right_team]:
+        for p in t.players:
+            player_velocity = p.normal_velocity()
+            if player_velocity > max_ball_velocity:
+                p.velocity = np.multiply(p.velocity, max_ball_velocity / player_velocity)
+
+
+def game_time_complete():
+    return float(state.ticks) / float(counter)
+
+
+def flip_pos(positions):
+    result = positions
+
+    if positions.ndim == 2:
+        for i in range(len(positions)):
+            result[i][0] = screen_width - 1 - positions[i][0]
+
+    if positions.ndim == 1:
+        result[0] = screen_width - 1 - positions[0]
+
+    return result
+
+
+def flip_vel(velocities):
+    result = velocities
+
+    if velocities.ndim == 2:
+        for i in range(len(velocities)):
+            result[i][0] = -1 * velocities[i][0]
+
+    if velocities.ndim == 1:
+        result[0] = -1 * velocities[0]
+
+    return result
+
+
+def flip_acc(accelerations):
+    result = accelerations
+
+    if accelerations.ndim == 2:
+        for i in range(len(accelerations)):
+            result[i][0] = -1 * accelerations[i][0]
+
+    return result
+
+
+def run_brains():
+    p1_pos = left_team.positionMatrix()
+    p1_vel = left_team.velocityMatrix()
+
+    p2_pos = right_team.positionMatrix()
+    p2_vel = right_team.velocityMatrix()
+
+    ball_pos, ball_vel = ball.position, ball.velocity
+
+    game_time = game_time_complete()
+
+    t1_brain = left_team.brain
+    t2_brain = right_team.brain
+
+    t1_move = t1_brain.move(p1_pos, p1_vel, p2_pos, p2_vel,
+                            ball_pos, ball_vel, score[0], score[1], game_time)
+    left_team.applyMoveToAllPlayers(t1_move)
+
+    # TODO: translate red positions and velocities
+    #       so that both brains think that they are playing from left (0,y) to right (MAX_X,y)
+    t2_move = t2_brain.move(flip_pos(p2_pos), flip_vel(p2_vel),
+                            flip_pos(p1_pos), flip_vel(p1_vel),
+                            flip_pos(ball_pos), flip_vel(ball_vel),
+                            score[1], score[0], game_time)
+    t2_move = flip_acc(t2_move)
+    right_team.applyMoveToAllPlayers(t2_move)
 
 
 # Checks if the mouse is clicked and inbound of the button
@@ -161,19 +305,30 @@ def resetAllPositions():
     global left_team, right_team
     ball.placeAndRestBall([half_width, half_height])
 
+    # Goes though each team and player to return to their original position
     for team in [left_team, right_team]:
         team.resetPosition()
         team.setState(SoccerTeamPlayers.States.WAITING)
 
 
+'''
+    Displays all the color options in a specific format
+'''
+
+
 def displayColorOptions(circle, position):
-    for color_choice in [LIGHT_GREY, RED, GREEN, YELLOW, BLUE, WHITE, BLACK]:
+    num, original_x = 0, position[0]
+    for color_choice in ALL_COLORS:
         # Creates a new circle to display in intro, with specific color options
         new_player = Circle(position, color_choice, 15)
+        # Adds special format
+        if (num + 1) % 4 == 0:
+            position = [original_x, position[1] + 35]
         # Makes sure its pressed and swaps the
         if isPressed(new_player.draw()):
             circle.color, new_player.color = new_player.color, circle.color
         position[0] += 35
+        num += 1
 
 
 def displayStartPage():
@@ -183,15 +338,11 @@ def displayStartPage():
                 screen.blit(default_label(ctrl[x] + instr[x]), instruct_position)
                 instruct_position[1] += 30
 
-        # Creates both instruction controls for both teams
-        num_player = ["Player One", "Player Two"]
-        controller = ["W", "S", "A", "D", "Q"], ["^", "v", "<", ">", "P"]
-        instr = [" - move up", " - move down", " - move left", " - move right", " - boost"]
-
         # for player one instruction position
         instruct_position = [half_width * .2, half_height * .6]
         i = 0
         for num in num_player:
+            # Creates the player number label
             screen.blit(default_label(num), instruct_position)
             instruct_position[1] += 30
             displayInstruct(controller[i])
@@ -204,11 +355,12 @@ def displayStartPage():
     screen.fill(PAGE_COLOR)  # Makes background
 
     # Displays the title
-    screen.blit(default_label("Welcome to Retro Soccer", 60), (half_width * 0.55, 30))
+    screen.blit(default_label(TITLE, 60), (half_width * .4, 30))
 
     # Draws out both p1, p2 and other available options
     player1.draw()
 
+    # Displays the coloring options for both players
     for player in [player1, player2]:
         position = [player.position[0] - 70, player.position[1] + 50]
         displayColorOptions(player, position)
@@ -219,22 +371,27 @@ def displayStartPage():
 
 def displayTimeOption(button_pos):
     global counter
+    # Creates a label for time
     button = [button_pos[0] * 0.85, button_pos[1] * .8]
-    screen.blit(default_label("Time: ", font_size=40), button)
+    screen.blit(default_label("Time: "), button)
+    # Creates a label for different time options
     button[0] = button_pos[0] + 20
-    screen.blit(default_label(str(counter // 60) + " mins", font_size=40), button)
-
+    screen.blit(default_label(str(counter // 60) + " mins"), button)
     button = [button_pos[0] * .6, button_pos[1] * .9]
-    options = ["5 mins", "10 mins", "15 mins", "20 mins", "25 mins"]
 
-    option_button = []
+    option_button = []  # Saves all the rect made
+
+    # Displays each available time to
     for index in range(len(options)):
         option_button.append(pygame.Rect(button, [50, 20]))
+        # If clicked on, then it will change the counter to be that time
         if isPressed(option_button[index]):
             new_time = 5 + (index * 5)
             counter = 60 * new_time
+
+        # Draws new time option on the screen
         pygame.draw.rect(screen, BLACK, option_button[index])
-        screen.blit(default_label(options[index], font_size=30), button)
+        screen.blit(default_label(options[index], font_size=25), button)
         button[0] += 100
 
 
@@ -244,10 +401,13 @@ def warning():
 
 
 def displayBallOptions():
+    # Creates a ball label
     pos = [ball.position[0] * .95, ball.position[1] * .75]
     screen.blit(default_label("Ball"), pos)
+    # Draws out the ball on the screen
     ball.draw()
-    pos = [ball.position[0] * .8, screen_height * .6]
+    # Displays the many color options it can be
+    pos = [ball.position[0] * .9, screen_height * .55]
     displayColorOptions(ball, pos)
 
 
@@ -267,6 +427,7 @@ def StartPage():
                 sys.exit()
 
         # If clicked on the button, it will start the game
+        # Only if ball is not the player's colors or player1 color is player2 color
         if isPressed(play_button):
             if player1.color is not player2.color:
                 if ball.color not in [player1.color, player2.color]:
@@ -281,7 +442,7 @@ def StartPage():
         pygame.draw.rect(screen, WHITE, play_button)
         # Creates a text to go with the button
         play_label = default_label("Play", font_color=BLACK)
-        button_position[0] = half_width * .92
+        button_position[0] = half_width * .95
         screen.blit(play_label, button_position)
 
         pygame.display.flip()
@@ -293,9 +454,9 @@ def displayScoreFinal():
     score_position[1] *= 1.05
 
     # Displays the score sheet on the top of the screen
-    screen.blit(default_label("Player 1", 200), player_pos)
+    screen.blit(default_label(P1, 200), player_pos)
     player_pos[0] = screen_width - player_pos[0]
-    screen.blit(default_label("Player 2", 200), player_pos)
+    screen.blit(default_label(P2, 200), player_pos)
 
     for player_score in [str(score[0]), "-", str(score[1])]:
         screen.blit(default_label(player_score, 200), score_position)
@@ -309,7 +470,7 @@ def chooseWinner():
     else:
         screen.blit(default_label("Winner", 200), title_position)
         title_position[1] += 100
-        screen.blit(default_label("Player 1" if score[0] > score[1] else "Player 2", 300), title_position)
+        screen.blit(default_label(P1 if score[0] > score[1] else P2, 300), title_position)
 
     displayScoreFinal()
 
@@ -346,13 +507,14 @@ def displayLayout():
         # ! Draws the goal post, left and right players
         [goal.draw() for goal in goal_posts]
 
+        # Draws each player on both teams
         for player_side in [left_team.players, right_team.players]:
             [player.draw() for player in player_side]
 
     def displayScore():
         # ! Update scores
         # Displays the score board for both teams
-        display_setup = ["Player 1", str(score[0]), "-", str(score[1]), "Player 2"]
+        display_setup = [P1, str(score[0]), "-", str(score[1]), P2]
         spacing, position = [200, 25, 25, 125, 0], [half_width - 200, 20]
         index = 0
         for score_setup in display_setup:
@@ -427,7 +589,7 @@ def CountDownPage():
             pos[0] -= half_width * .05
             screen.blit(default_label("GO!", 100), pos)
         pygame.display.flip()
-        clock.tick(60)
+        # clock.tick(240)
 
 
 def getHit(player):
@@ -446,7 +608,6 @@ def getHit(player):
 # # Idea to use
 def moveBall(time):
     # using scalar to vector formula x = ut + [(1/2 a t^2) = res]
-    friction = -0.015
     ut = vel * float(time)
     half_res = .5 * friction * time ** 2
     # turn the scalar quantity into a vector by multiplying the value with
@@ -456,33 +617,45 @@ def moveBall(time):
     return ball.position + ut + scalar_to_vector
 
 
-# # Idea to use \ end
+def touchBallMode():
+    for player_side in [left_team.players, right_team.players]:
+        for player in player_side:
+            w, h = getHit(player)  # Checks if in bounds for both x, y coordinates for both teams
+            check = SoccerTeamPlayers.CheckMovement(player.position, player_size)
+            checkLeft, checkRight = check.isLeftBound(), check.isRightBound()
+            checkUp, checkDown = check.isUpperBound(), check.isLowerBound()
+
+            # ball.calculate_collision(player)
+            if playerContact(player):
+                # if it hits the outer bounds it will stop from moving after it hits the bounds
+                ball.setHorizontalMovement(w * (-1 if not (checkLeft and checkRight) else 1))
+                ball.setVerticalMovement(h * (-1 if not (checkUp and checkRight) else 1))
 
 
-def CheckCollide():
+def MainFunction():
     global ball
 
     # Check if the ball is in the goal
     [goal_posts[x].isScored() for x in range(len(goal_posts))]
 
-    # Checks if in bounds for both x, y coordinates
-    in_field = inBounds(ball)
-    if in_field:
-        # for both teams
-        for player_side in [left_team.players, right_team.players]:
-            for player in player_side:
-                # Saves the hit made and adds it to the balls position
-                w, h = getHit(player)
-                a, b = inBounds(ball)
-                # if it hits the outer bounds it will stop from moving after it hits the bounds
-                ball.setHorizontalMovement(w * (1 if a else -1))
-                ball.setVerticalMovement(h * (1 if b else -1))
-        return
+    state.start()
+    ball.velocity = np.array([random() - 0.5, random() - 0.5])
 
-    for i in range(len(in_field)):
-        # hits back from going out of bounds
-        if in_field[i]:
-            ball.position[i] = - ball.position[i]
+    run_brains()
+    limit_velocities()
+    state.tick()
+
+
+def initializeTeams():
+    global left_team, right_team
+    # ! Creates the players on the screen
+    # Displays the players on the screen for Both Side
+    # Saves and displays the players on both sides
+    teams = SoccerTeamPlayers.Teams
+    left_team = SoccerTeamPlayers.Team(teams.TEAM_ONE, player1.color, DefendersAndAttackers(ball), goal_posts[0],
+                                       goal_posts[1])
+    right_team = SoccerTeamPlayers.Team(teams.TEAM_TWO, player2.color, BehindAndTowards(ball), goal_posts[1],
+                                        goal_posts[0])
 
 
 def MainGame():
@@ -492,7 +665,6 @@ def MainGame():
         # Handling input
         for event in pygame.event.get():
             if event.type == pygame.USEREVENT:
-                global counter
                 counter -= 1
 
             if event.type == pygame.QUIT:
@@ -510,12 +682,12 @@ def MainGame():
         # robotMovement(soccer.TEAM_ONE, left_team)  # For AI
         # robotMovement(soccer.TEAM_TWO, right_team)  # For AI
 
-        CheckCollide()
+        MainFunction()
 
         if counter == 0:
             screen.fill(PAGE_COLOR)  # Clears the screen
             screen.blit(default_label("GAME OVER!", 100), half_screen)
-            GameResult()
+            # GameResult() # not working
             return
 
         # Visuals
@@ -526,16 +698,6 @@ def MainGame():
         # pygame.display.update()
         pygame.display.flip()
         clock.tick(60)
-
-
-def initializeTeams():
-    global left_team, right_team
-    # ! Creates the players on the screen
-    # Displays the players on the screen for Both Side
-    # Saves and displays the players on both sides
-    teams = SoccerTeamPlayers.Teams
-    left_team = SoccerTeamPlayers.Team(teams.TEAM_ONE, player1.color, goal_posts[0], goal_posts[1])
-    right_team = SoccerTeamPlayers.Team(teams.TEAM_TWO, player2.color, goal_posts[1], goal_posts[0])
 
 
 def Main():
