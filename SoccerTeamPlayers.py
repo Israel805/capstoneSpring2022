@@ -106,7 +106,6 @@ class Player(Circle):
 class CheckMovement:
     def __init__(self, position: list, size: int):
         self.position, self.size = position, size
-        self.sides = 20, 75
 
     def isLeftBound(self) -> bool:
         goal_post = goal_posts[0]  # Assume both is the same vertical range
@@ -119,7 +118,7 @@ class CheckMovement:
                self.position[0] < screen_width - self.size
 
     def isUpperBound(self) -> bool:
-        return self.position[1] > self.size + self.sides[1]
+        return self.position[1] > self.size + sides[1]
 
     def isLowerBound(self) -> bool:
         return self.position[1] < screen_height - self.size
@@ -167,3 +166,18 @@ class CheckUsersMovement(CheckMovement):
     def moveDown(self):
         if self.keys[self.player_key[3]] and self.isLowerBound():
             self.position[1] += self.velocity
+
+
+class User(CheckUsersMovement):
+    def __init__(self, team, player):
+        super().__init__(team, player)
+
+    def moveAllDirections(self):
+        # The outer circle doesnt touch the left side, increment in x coordinate
+        self.moveLeft()
+        # Only to the right of the screen, decrement in x coordinate
+        self.moveRight()
+        # If below the scoreboard, increment in y coordinate
+        self.moveUp()
+        # if down arrow key is pressed, decrement in y coordinate
+        self.moveDown()

@@ -1,16 +1,19 @@
 # The display
+import sys
 from enum import Enum
 import pygame
 
 # Screen format
+from pygame import mouse, DOUBLEBUF
+
+''' Display Format/Size '''
 screen_width, screen_height = 1080, 768
 half_screen = half_width, half_height = screen_width // 2, screen_height // 2
-vel = 5
 button_size, ball_size, player_size = [150, 50], 20, 25
 goal_size = [10, 150]
 goal_xpos, goal_ypos = 10, half_height - 70
 
-# String variables
+''' String Variables '''
 MAIN_TITLE: str = 'Soccer Pong Game'
 TITLE: str = 'Welcome to Retro Soccer'
 options: list = ["5 mins", "10 mins", "15 mins", "20 mins", "25 mins"]
@@ -20,7 +23,7 @@ num_player = ["Player One", "Player Two"]
 controller = ["W", "S", "A", "D", "Q"], ["^", "v", "<", ">", "P"]
 instr = [" - move up", " - move down", " - move left", " - move right", " - boost"]
 
-# The time counter
+''' Time Counter '''
 MINS = 5
 counter = 60 * MINS  # 5 mins
 
@@ -42,23 +45,49 @@ def default_label(string, font_size=30, font_color=WHITE):
     return default_font.render(str(string), True, font_color)
 
 
+# Checks if the mouse is clicked and inbound of the button
+def isPressed(obj):
+    return mouse.get_pressed(3)[0] and obj.collidepoint(mouse.get_pos())
+
+
 # AI Variables
 friction = -0.015
 
 # left_region = 75, Playground.half_width
 # right_region = Playground.half_width, Playground.screen_width - 75
 
+''' Global Variables '''
 receiving = closestToTheBALL = None
-
-# Global Variables
 ZERO_MATRIX: list = [0, 0]
 max_ball_velocity = interceptionRange = 10
 NUM_PLAYERS = 7
 p1_num = p2_num = 0
 UPDATE_FREQUENCY = 0.02
+sides = 20, 75
+vel = 5
+ticks = 0
+
+''' Main Start of Pygame '''
+# Creates a new pygame
+pygame.init()
+
+# Creates a new clock timer
+clock = pygame.time.Clock()
+pygame.time.set_timer(pygame.USEREVENT, 1000)
+
+left_team = right_team = 0
+walls = []
+flags = DOUBLEBUF
+# ! Setting up the main window
+screen = pygame.display.set_mode((screen_width, screen_height), flags, 16)
+pygame.display.set_caption(MAIN_TITLE)
+
+# Creates global variables
+score = ZERO_MATRIX
+
+''' All Classes '''
 
 
-# Al the classes
 class Teams(Enum):
     TEAM_ONE, TEAM_TWO = 0, 1
 
@@ -101,6 +130,7 @@ class StartPositionLeft(Enum):
     BACK_LEFT, BACK_RIGHT = (w * .2, h * .6), (w * .2, h * 1.2)
 
 
+''' Team-Based Selection Variables '''
 player_control = {
     Teams.TEAM_ONE: [pygame.K_a, pygame.K_d, pygame.K_w, pygame.K_s],
     Teams.TEAM_TWO: [pygame.K_LEFT, pygame.K_RIGHT, pygame.K_UP, pygame.K_DOWN]

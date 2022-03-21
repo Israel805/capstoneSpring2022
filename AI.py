@@ -1,7 +1,7 @@
 import random
 from math import sqrt
 
-import Constant
+from Constant import *
 import Playground
 import SoccerTeamPlayers
 from Ball import pass_ball, shoot
@@ -140,8 +140,8 @@ def player_update(player):
 
 # Objective: defend the ball from getting into the goal post
 def playingDefense(team_playing, selected_player, bounds=None):
-    team_one_region = lambda x: x in range(20, Playground.half_width)
-    team_two_region = lambda x: x in range(Playground.half_width, Playground.screen_width - 20)
+    team_one_region = lambda x: x in range(20, half_width)
+    team_two_region = lambda x: x in range(half_width, screen_width - 20)
 
     team_one = selected_player.team is SoccerTeamPlayers.Teams.TEAM_ONE
 
@@ -206,9 +206,9 @@ def playingOffenseForTeamOne(team_playing, selected_player, bounds, counter=0):
 
 
 def initializeTeammates(team_number, team):
-    positioning = Constant.TeamPosition
+    positioning = TeamPosition
     for eachPlayer in team:
-        bounds = SoccerTeamPlayers.CheckAIMovement(eachPlayer.position, Playground.player_size)
+        bounds = SoccerTeamPlayers.CheckAIMovement(eachPlayer.position, player_size)
         if eachPlayer.team_position is positioning.STRIKER:
             playingOffenseForTeamOne(team_number, eachPlayer, bounds)
             continue
