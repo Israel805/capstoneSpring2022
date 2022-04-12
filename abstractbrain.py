@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 from typing import final
-
 import numpy as np
 
 

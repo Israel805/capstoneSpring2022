@@ -1,6 +1,7 @@
 # The display
-import sys
 from enum import Enum
+from math import sqrt
+
 import pygame
 
 # Screen format
@@ -58,14 +59,11 @@ friction = -0.015
 
 ''' Global Variables '''
 receiving = closestToTheBALL = None
-ZERO_MATRIX: list = [0, 0]
 max_ball_velocity = interceptionRange = 10
 NUM_PLAYERS = 7
 p1_num = p2_num = 0
-UPDATE_FREQUENCY = 0.02
 sides = 20, 75
-vel = 5
-ticks = 0
+max_player_velocity = vel = 5
 
 ''' Main Start of Pygame '''
 # Creates a new pygame
@@ -83,18 +81,13 @@ screen = pygame.display.set_mode((screen_width, screen_height), flags, 16)
 pygame.display.set_caption(MAIN_TITLE)
 
 # Creates global variables
-score = ZERO_MATRIX
+score = [0, 0]
 
 ''' All Classes '''
 
 
 class Teams(Enum):
     TEAM_ONE, TEAM_TWO = 0, 1
-
-
-class CircleDescription:
-    def __init__(self, position, color):
-        self.position, self.color = position, color
 
 
 class States(Enum):
@@ -138,4 +131,27 @@ player_control = {
 
 starting_position = {Teams.TEAM_ONE: StartPositionLeft, Teams.TEAM_TWO: StartPositionRight}
 
+
 # actions = {Teams.TEAM_ONE: , Teams.TEAM_TWO: StartPositionRight}
+
+# Function to calculate the distance between two objects
+def distance(obj1, obj2):
+    r1, r2 = direction(obj1, obj2)
+    # Distance formula
+    return sqrt(r1 ** 2 + r2 ** 2)
+
+
+# Calculates the direction on where it is going
+def direction(obj1, obj2):
+    # Finds the position in the objects
+    if type(obj1) is not list:
+        obj1 = obj1.position
+
+    if type(obj2) is not list:
+        obj2 = obj2.position
+
+    x1, y1 = obj1
+    x2, y2 = obj2
+
+    # vertical, horizontal movement
+    return [x2 - x1, y2 - y1]

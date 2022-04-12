@@ -1,3 +1,5 @@
+from random import random
+
 from brains.BaseBrainUtils import *
 
 
@@ -9,7 +11,8 @@ class DefendersAndAttackers(BaseBrainUtils):
 
         for i in range(4):
             if 25 < self.distance_to_ball(i) < (i + 1) * 100:
-                result.append((self.run_towards(i, self.ball_pos)) if self.is_behind_ball(i) else (run_back()))
+                is_behind = self.is_behind_ball(i) and 0.8 > random()
+                result.append((self.run_towards(i, self.ball_pos)) if is_behind else (run_back()))
                 continue
 
             target = self.BASE_POS[i]
@@ -21,9 +24,8 @@ class DefendersAndAttackers(BaseBrainUtils):
                 continue
 
             result.append((self.run_towards(i, target)) if self.is_ball_direction_forward() else (run_back()))
-        for i in range(4, 5):
-            acceleration = self.run_towards(i, self.ball_pos) if self.is_behind_ball(i) else run_back()
-            result.append(acceleration)
+
+        result.append(self.run_towards(4, self.ball_pos) if self.is_behind_ball(4) else run_back())
         return np.array(result)
 
 
