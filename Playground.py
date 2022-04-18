@@ -302,7 +302,7 @@ def initializeTeams(player1_color, player2_color, ball_color, time_option):
     counter = time_option
 
     # Creates a game tactic where the AI can play with
-
+    left_team.brain = right_team.brain = DefendersAndAttackers(ball)
 
 def Main(colors: list, ball_color, time_option):
     initializeTeams(colors[0], colors[1], ball_color, time_option)

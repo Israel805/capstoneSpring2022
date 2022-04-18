@@ -7,9 +7,9 @@ from physics import Circle
 class Team:
     def __init__(self, team_num: Teams, player_color):
         self.team_number = Teams(team_num)
+        self.brain = None
 
         # Creates a game tactic where the AI can play with
-        self.brain = DefendersAndAttackers(ball)
         self.side = starting_position.get(team_num)
         self.team_color = player_color
 
