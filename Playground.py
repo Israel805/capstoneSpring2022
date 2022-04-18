@@ -1,10 +1,11 @@
-from random import shuffle, random
+from random import random
 
 import numpy as np
 from pygame import *
 
 # General setup
 import SoccerTeamPlayers
+from Brain import Brain, updates
 from Constant import *
 from brains.DefendersAndAttackers import DefendersAndAttackers
 # Draws a circle on the screen
@@ -42,7 +43,11 @@ class GoalPost:
     def draw(self):
         pygame.draw.rect(screen, self.color, self.object)
 
+    def insideGoal(self):
+        return self.object.top < ball.position[1] < self.object.bottom
+
     def isScored(self):
+
         def resetAllPositions():
             global left_team, right_team
             ball.placeAndRestBall([half_width, half_height])
@@ -52,7 +57,9 @@ class GoalPost:
                 team.resetPosition()
                 team.setState(SoccerTeamPlayers.States.WAITING)
 
-        if self.object.collidepoint(ball.position):
+        # if self.object.collidepoint(ball.position):
+        x, y = ball.position
+        if (x < sides[0] or x > screen_width - sides[0]) and self.insideGoal():
             score[self.goal_number] += 1
             resetAllPositions()
 
@@ -60,109 +67,8 @@ class GoalPost:
 # ! Draws the goal post on both sides on the field
 goal_posts = [GoalPost((goal_xpos * .2, goal_ypos), WHITE, 0), GoalPost((screen_width -
                                                                          (goal_xpos * .8) - 3, goal_ypos), WHITE, 1)]
-ticks = 0
-
 # The primary ball to score on
 ball = Ball(half_screen, RED, ball_size)
-
-''' Brain Functions'''
-
-
-def start(listOfPlayers):
-    for player_side in [left_team.players, right_team.players]:
-        for player in player_side:
-            listOfPlayers.append(player)
-    listOfPlayers.append(ball)
-
-
-def tick(list_input):
-    global ticks
-    ticks = ticks + 1
-
-    new_bodies = []
-    for b1 in list_input:
-        new_body = b1
-        for b2 in list_input:
-            if b1 != b2:
-                new_body = new_body.calculate_collision(b2)
-        new_body.bounce_wall()
-        new_bodies.append(new_body)
-        new_body.move()
-
-    for i in range(len(list_input)):
-        list_input[i].set_pos_vel(new_bodies[i])
-
-    shuffle(list_input)
-
-
-def negateAll(arr: list, extra=0):
-    result = arr.copy()
-    for i in range(len(arr)):
-        result[i][0] = (- 1 * arr[i][0]) + extra
-    return result
-
-
-def run_brains():
-    def game_time_complete():
-        return float(counter)
-
-    def flip_pos(positions):
-        if positions.ndim == 2:
-            return negateAll(positions, screen_width)
-
-        result = positions.copy()
-        result[0] = screen_width - 1 - positions[0]
-        return result
-
-    def flip_vel(velocities):
-        if velocities.ndim == 2:
-            return negateAll(velocities)
-
-        result = velocities.copy()
-        result[0] = -1 * velocities[0]
-
-        return result
-
-    def flip_acc(accelerations):
-        if accelerations.ndim == 2:
-            return negateAll(accelerations)
-
-        return accelerations.copy()
-
-    p1_pos, p1_vel = left_team.positionMatrix(), left_team.velocityMatrix()
-    p2_pos, p2_vel = right_team.positionMatrix(), right_team.velocityMatrix()
-
-    ball_pos, ball_vel = ball.position, ball.velocity
-
-    game_time = game_time_complete()
-
-    t1_brain, t2_brain = left_team.brain, right_team.brain
-
-    t1_move = t1_brain.move(p1_pos, p1_vel, p2_pos, p2_vel, ball_pos, ball_vel, score[0], score[1], game_time)
-    left_team.applyMoveToAllPlayers(t1_move)
-
-    # Translate team's 2 positions and velocities so that both brains think that they are playing from left (0,
-    # y) to right (MAX_X,y)
-    t2_move = t2_brain.move(flip_pos(p2_pos), flip_vel(p2_vel), flip_pos(p1_pos), flip_vel(p1_vel),
-                            flip_pos(ball_pos), flip_vel(ball_vel), score[1], score[0], game_time)
-    t2_move = flip_acc(t2_move)
-    right_team.applyMoveToAllPlayers(t2_move)
-
-
-def limit_velocities():
-    ball_velocity = ball.normal_velocity()
-
-    if ball_velocity > max_ball_velocity:
-        ball.velocity = np.multiply(ball.velocity, max_ball_velocity / ball_velocity)
-
-    for t in [left_team, right_team]:
-        for p in t.players:
-            player_velocity = p.normal_velocity()
-            if player_velocity > max_player_velocity:
-                p.velocity = np.multiply(p.velocity, max_player_velocity / player_velocity)
-
-
-''' End of brain Functions'''
 
 ''' Start of Display Functions '''
 
@@ -320,45 +226,39 @@ def touchBallMode():
             ball.setVerticalMovement(b * (-1 if not (checkUp and checkRight) else 1))
 
 
+def getAllCircles():
+    circles = []
+    for player_side in [left_team.players, right_team.players]:
+        [circles.append(player) for player in player_side]
+    circles.append(ball)
+    return circles
+
+
 def MainFunction():
-    global ball
+    global ball, vel
+
+    # Creates a boost for the each player's velocity
+    if pygame.key.get_pressed()[K_COLON] or pygame.key.get_pressed()[K_q]:
+        vel = vel * 1.25
+
+    # Controller for player 1
+    left_team.user.moveAllDirections()
+
+    # Controller for player 2
+    right_team.user.moveAllDirections()
 
     # Check if the ball is in the goal
     [goal_posts[x].isScored() for x in range(len(goal_posts))]
-    circles = []
-    start(circles)
+
     ball.velocity = np.array([random() - 0.5, random() - 0.5])
 
-    run_brains()
-    limit_velocities()
-    tick(circles)
-
-
-def initializeTeams(player1_color, player2_color, ball_color):
-    global left_team, right_team, ball
-    # ! Creates the players on the screen
-    # Displays the players on the screen for Both Side
-    # Saves and displays the players on both sides
-    teams = SoccerTeamPlayers.Teams
-    left_team = SoccerTeamPlayers.Team(teams.TEAM_ONE, player1_color)
-    right_team = SoccerTeamPlayers.Team(teams.TEAM_TWO, player2_color)
-
-    ball.color = ball_color
-
-    # Creates a game tactic where the AI can play with
-    right_team.brain = DefendersAndAttackers(ball)
-    left_team.brain = DefendersAndAttackers(ball)
+    brain = Brain(left_team, right_team, ball)
+    brain.run_brains()
+    brain.limit_velocities()
+    updates(getAllCircles())
 
 
 def MainGame():
-    # Uses the team their on and which player player one has control
-    def userBoost():
-        global vel
-
-        # Creates a boost for the each player's velocity
-        if pygame.key.get_pressed()[K_COLON] or pygame.key.get_pressed()[K_q]:
-            vel = vel * 1.25
-
     global left_team, right_team, counter
     while True:
 
@@ -370,14 +270,6 @@ def MainGame():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
-
-        userBoost()
-
-        # Controller for player 1
-        left_team.user.moveAllDirections()
-
-        # Controller for player 2
-        right_team.user.moveAllDirections()
 
         MainFunction()
 
@@ -393,9 +285,25 @@ def MainGame():
 
         # ! Updating the window
         pygame.display.flip()
+        pygame.display.update()
         clock.tick(60)
 
 
-def Main(colors: list, ball_color):
-    initializeTeams(colors[0], colors[1], ball_color)
+def initializeTeams(player1_color, player2_color, ball_color, time_option):
+    global left_team, right_team, ball, counter
+    # ! Creates the players on the screen
+    # Displays the players on the screen for Both Side
+    # Saves and displays the players on both sides
+    teams = SoccerTeamPlayers.Teams
+    left_team = SoccerTeamPlayers.Team(teams.TEAM_ONE, player1_color)
+    right_team = SoccerTeamPlayers.Team(teams.TEAM_TWO, player2_color)
+
+    ball.color = ball_color
+    counter = time_option
+
+    # Creates a game tactic where the AI can play with
+
+
+def Main(colors: list, ball_color, time_option):
+    initializeTeams(colors[0], colors[1], ball_color, time_option)
     MainGame()

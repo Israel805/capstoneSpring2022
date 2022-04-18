@@ -1,7 +1,7 @@
 import sys
 
 from Constant import *
-import Playground
+from Playground import Main
 from physics import Circle
 
 # Creates both circles for the intro, the initial choice
@@ -152,8 +152,7 @@ def StartPage():
             if player1.color is not player2.color:
                 if ball.color not in both_playr_colors:
                     CountDownPage()
-                    Playground.initializeTeams(both_playr_colors[0], both_playr_colors[1], ball.color)
-                    Playground.MainGame()
+                    Main(both_playr_colors, ball.color, counter)
         warning()
 
         startPageDisplay()

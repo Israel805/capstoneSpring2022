@@ -28,13 +28,19 @@ class Circle:
 
     # Checks if circle is hitting the wall and bounce off the wall
     def bounce_wall(self):
-        full_screen = [screen_width, screen_height]
-        for x in range(len(self.position)):
-            bound1 = self.position[x] < player_size + (x * sides[1]) and self.velocity[x] < 0
-            bound2 = self.position[x] > full_screen[x] - player_size and self.velocity[x] > 0
+        maxX, maxY = screen_width, screen_height
 
-            if bound1 or bound2:
-                self.velocity[x] = -self.velocity[x]
+        if self.position[0] < self.size + sides[0] and self.velocity[0] < 0:
+            self.velocity[0] = -self.velocity[0]
+
+        if self.position[0] > maxX - self.size - sides[0] and self.velocity[0] > 0:
+            self.velocity[0] = -self.velocity[0]
+
+        if self.position[1] < self.size + sides[1] and self.velocity[1] < 0:
+            self.velocity[1] = -self.velocity[1]
+
+        if self.position[1] > screen_height - self.size and self.velocity[1] > 0:
+            self.velocity[1] = -self.velocity[1]
 
     # Finds any detection from the overlap and if it is towards
     def detect_collision(self, obj):
@@ -65,33 +71,3 @@ class Circle:
 
         thing1.velocity = vel1 - (2 * mass2 / (mass1 + mass2)) * (dot_product / norm_squared * posDiff)
         return thing1
-
-
-class PhyState:
-    def __init__(self):
-        self.bodies, self.ticks = [], 0
-
-    def add_body(self, body):
-        self.bodies.append(body)
-
-    def update(self):
-        self.ticks = self.ticks + 1
-
-        new_bodies = []
-        temp = self.bodies.copy()
-        for b1 in self.bodies:
-            new_body = b1
-            temp.remove(new_body)
-            for b2 in temp:
-                new_body = new_body.calculate_collision(b2)
-            new_body.bounce_wall()
-            new_bodies.append(new_body)
-            new_body.move()
-
-        for i in range(len(self.bodies)):
-            self.bodies[i].set_pos_vel(new_bodies[i])
-
-        shuffle(self.bodies)
-
-    def clear(self):
-        self.bodies = []

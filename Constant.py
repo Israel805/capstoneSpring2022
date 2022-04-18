@@ -51,14 +51,7 @@ def isPressed(obj):
     return mouse.get_pressed(3)[0] and obj.collidepoint(mouse.get_pos())
 
 
-# AI Variables
-friction = -0.015
-
-# left_region = 75, Playground.half_width
-# right_region = Playground.half_width, Playground.screen_width - 75
-
 ''' Global Variables '''
-receiving = closestToTheBALL = None
 max_ball_velocity = interceptionRange = 10
 NUM_PLAYERS = 7
 p1_num = p2_num = 0
@@ -106,33 +99,17 @@ class FieldSide(Enum):
 
 w, h = half_screen
 
-
-class StartPositionRight(Enum):
-    # Initial position for right side team
-    FORWARD = (w * 1.4, h)
-    MIDDLE, MIDDLE_BACK = (w * 1.7, h * .4), (w * 1.9, h)
-    SIDE_LEFT, SIDE_RIGHT = (w * 1.6, h * .8), (w * 1.6, h * 1.5)
-    BACK_LEFT, BACK_RIGHT = (w * 1.9, h * .5), (w * 1.8, h * .8)
-
-
-class StartPositionLeft(Enum):
-    # Initial position for left side team
-    FORWARD = (w * .6, h)
-    MIDDLE, MIDDLE_BACK = (w * .5, h * 1.25), (w * .5, h * .75)
-    SIDE_LEFT, SIDE_RIGHT = (w * .5, h), (w * .4, h * 1.6)
-    BACK_LEFT, BACK_RIGHT = (w * .2, h * .6), (w * .2, h * 1.2)
-
-
 ''' Team-Based Selection Variables '''
 player_control = {
     Teams.TEAM_ONE: [pygame.K_a, pygame.K_d, pygame.K_w, pygame.K_s],
     Teams.TEAM_TWO: [pygame.K_LEFT, pygame.K_RIGHT, pygame.K_UP, pygame.K_DOWN]
 }
-
+StartPositionLeft = [(w * .6, h), (w * .5, h * 1.25), (w * .5, h * .75), (w * .5, h), (w * .4, h * 1.6),
+                     (w * .2, h * .6), (w * .2, h * 1.2)]
+StartPositionRight = [(w * 1.4, h), (w * 1.7, h * .4), (w * 1.9, h), (w * 1.6, h * .8), (w * 1.6, h * 1.5),
+                      (w * 1.9, h * .5), (w * 1.8, h * .8)]
 starting_position = {Teams.TEAM_ONE: StartPositionLeft, Teams.TEAM_TWO: StartPositionRight}
 
-
-# actions = {Teams.TEAM_ONE: , Teams.TEAM_TWO: StartPositionRight}
 
 # Function to calculate the distance between two objects
 def distance(obj1, obj2):
