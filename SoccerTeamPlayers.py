@@ -14,7 +14,7 @@ class Team:
         self.team_color = player_color
 
         # Gets the correct circle and controls from the team side chosen
-        self.user = User(self.team_number, Player(self.team_number, self.side[0], player_color))
+        self.user = User(self.team_number, self.side[0], player_color)
 
         # Adds to the list the new player, gets the initial value of the player
         # Uses same size, color and its specific position
@@ -71,36 +71,37 @@ class CheckMovement:
 class CheckUsersMovement(CheckMovement):
     def __init__(self, team, player):
         super().__init__(player.position, player.size)
-        self.keys, self.velocity = pygame.key.get_pressed(), vel
+        self.velocity = vel
         self.player_key = player_control.get(team)
 
     def moveLeft(self):
-        if self.keys[self.player_key[0]] and self.isLeftBound():
+        if pygame.key.get_pressed()[self.player_key[0]] and self.isLeftBound():
             self.position[0] -= self.velocity
 
     def moveRight(self):
-        if self.keys[self.player_key[1]] and self.isRightBound():
+        if pygame.key.get_pressed()[self.player_key[1]] and self.isRightBound():
             self.position[0] += self.velocity
 
     def moveUp(self):
-        if self.keys[self.player_key[2]] and self.isUpperBound():
+        if pygame.key.get_pressed()[self.player_key[2]] and self.isUpperBound():
             self.position[1] -= self.velocity
 
     def moveDown(self):
-        if self.keys[self.player_key[3]] and self.isLowerBound():
+        if pygame.key.get_pressed()[self.player_key[3]] and self.isLowerBound():
             self.position[1] += self.velocity
 
 
-class User(CheckUsersMovement):
-    def __init__(self, team, player):
-        super().__init__(team, player)
+class User(Player):
+    def __init__(self, team, position, color):
+        super().__init__(team, position, color)
+        self.check = CheckUsersMovement(team, self)
 
     def moveAllDirections(self):
         # The outer circle doesnt touch the left side, increment in x coordinate
-        self.moveLeft()
+        self.check.moveLeft()
         # Only to the right of the screen, decrement in x coordinate
-        self.moveRight()
+        self.check.moveRight()
         # If below the scoreboard, increment in y coordinate
-        self.moveUp()
+        self.check.moveUp()
         # if down arrow key is pressed, decrement in y coordinate
-        self.moveDown()
+        self.check.moveDown()

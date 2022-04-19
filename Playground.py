@@ -111,6 +111,8 @@ def Layout():
         for player_side in [left_team.players, right_team.players]:
             [player.draw() for player in player_side]
 
+        [user_side.draw() for user_side in [left_team.user, right_team.user]]
+
     def displayScore():
         # ! Update scores
         # Displays the score board for both teams
@@ -257,6 +259,12 @@ def MainFunction():
     brain.limit_velocities()
     updates(getAllCircles())
 
+    # # Calculates collision for player 1 and the ball
+    left_team.user.calculate_collision(ball)
+    #
+    # # Calculates collision for player 2 and the ball
+    right_team.user.calculate_collision(ball)
+
 
 def MainGame():
     global left_team, right_team, counter
@@ -303,6 +311,7 @@ def initializeTeams(player1_color, player2_color, ball_color, time_option):
 
     # Creates a game tactic where the AI can play with
     left_team.brain = right_team.brain = DefendersAndAttackers(ball)
+
 
 def Main(colors: list, ball_color, time_option):
     initializeTeams(colors[0], colors[1], ball_color, time_option)

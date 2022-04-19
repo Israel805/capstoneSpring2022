@@ -80,7 +80,7 @@ class Brain:
                     p.velocity = np.multiply(p.velocity, max_player_velocity / player_velocity)
 
 
-def updates(list_input):
+def updates(list_input: list):
     global ticks
     ticks = ticks + 1
 

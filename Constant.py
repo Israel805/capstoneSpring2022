@@ -53,7 +53,7 @@ def isPressed(obj):
 
 ''' Global Variables '''
 max_ball_velocity = interceptionRange = 10
-NUM_PLAYERS = 7
+NUM_PLAYERS = 6
 p1_num = p2_num = 0
 sides = 20, 75
 max_player_velocity = vel = 5

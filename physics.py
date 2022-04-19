@@ -1,7 +1,23 @@
 import copy
-from random import shuffle
 import numpy as np
 from Constant import *
+
+
+class CheckAIMovement:
+    def __init__(self, position: list, size: int):
+        self.position, self.size = position, size
+
+    def isLeftBound(self) -> bool:
+        return self.position[0] < self.size + sides[0]
+
+    def isRightBound(self) -> bool:
+        return self.position[0] > screen_width - self.size - sides[0]
+
+    def isUpperBound(self) -> bool:
+        return self.position[1] < self.size + sides[1]
+
+    def isLowerBound(self) -> bool:
+        return self.position[1] > screen_height - self.size
 
 
 class Circle:
@@ -28,18 +44,17 @@ class Circle:
 
     # Checks if circle is hitting the wall and bounce off the wall
     def bounce_wall(self):
-        maxX, maxY = screen_width, screen_height
-
-        if self.position[0] < self.size + sides[0] and self.velocity[0] < 0:
+        check = CheckAIMovement(list(self.position), self.size)
+        if check.isLeftBound() and self.velocity[0] < 0:
             self.velocity[0] = -self.velocity[0]
 
-        if self.position[0] > maxX - self.size - sides[0] and self.velocity[0] > 0:
+        if check.isRightBound() and self.velocity[0] > 0:
             self.velocity[0] = -self.velocity[0]
 
-        if self.position[1] < self.size + sides[1] and self.velocity[1] < 0:
+        if check.isUpperBound() and self.velocity[1] < 0:
             self.velocity[1] = -self.velocity[1]
 
-        if self.position[1] > screen_height - self.size and self.velocity[1] > 0:
+        if check.isLowerBound() and self.velocity[1] > 0:
             self.velocity[1] = -self.velocity[1]
 
     # Finds any detection from the overlap and if it is towards
