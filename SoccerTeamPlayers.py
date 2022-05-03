@@ -8,18 +8,19 @@ class Team:
     def __init__(self, team_num: Teams, player_color):
         self.team_number = Teams(team_num)
         self.brain = None
-
-        # Creates a game tactic where the AI can play with
         self.side = starting_position.get(team_num)
         self.team_color = player_color
 
-        # Gets the correct circle and controls from the team side chosen
-        self.user = User(self.team_number, self.side[0], player_color)
-
         # Adds to the list the new player, gets the initial value of the player
         # Uses same size, color and its specific position
-        self.players = [Player(self.team_number, self.side[index], player_color)
-                        for index in range(1, len(self.side))]
+        self.players = [Player(self.team_number, soccer_player.value, player_color)
+                        for soccer_player in self.side]
+        # Gets the correct circle and controls from the team side chosen
+        num = {Teams.TEAM_ONE: p1_num, Teams.TEAM_TWO: p2_num}.get(self.team_number)
+        self.user = User(self.team_number, self.players[num])
+
+        # Removes the user from the player list
+        self.players.remove(self.players[num])
 
     def applyMoveToAllPlayers(self, move: np.array):
         self.brain.last_move = []
@@ -42,6 +43,13 @@ class Player(Circle):
     def __init__(self, team, position: list, p_color):
         super().__init__(position, p_color)
         self.team = team
+        self.distanceToBall, self.closePlayers = -1, []
+
+    def setDistanceToBall(self, new_distance):
+        self.distanceToBall = new_distance
+
+    def addClosePlayer(self, player):
+        self.closePlayers.append(player)
 
     def apply_move(self, move: np.array):
         norm = np.linalg.norm(move)
@@ -71,37 +79,48 @@ class CheckMovement:
 class CheckUsersMovement(CheckMovement):
     def __init__(self, team, player):
         super().__init__(player.position, player.size)
-        self.velocity = vel
+        self.keys, self.velocity = pygame.key.get_pressed(), vel
         self.player_key = player_control.get(team)
 
     def moveLeft(self):
-        if pygame.key.get_pressed()[self.player_key[0]] and self.isLeftBound():
+        if self.keys[self.player_key[0]] and self.isLeftBound():
             self.position[0] -= self.velocity
 
     def moveRight(self):
-        if pygame.key.get_pressed()[self.player_key[1]] and self.isRightBound():
+        if self.keys[self.player_key[1]] and self.isRightBound():
             self.position[0] += self.velocity
 
     def moveUp(self):
-        if pygame.key.get_pressed()[self.player_key[2]] and self.isUpperBound():
+        if self.keys[self.player_key[2]] and self.isUpperBound():
             self.position[1] -= self.velocity
 
     def moveDown(self):
-        if pygame.key.get_pressed()[self.player_key[3]] and self.isLowerBound():
+        if self.keys[self.player_key[3]] and self.isLowerBound():
             self.position[1] += self.velocity
 
 
-class User(Player):
-    def __init__(self, team, position, color):
-        super().__init__(team, position, color)
-        self.check = CheckUsersMovement(team, self)
+class User(CheckUsersMovement, Player):
+    def __init__(self, team, player):
+        super().__init__(team, player)
 
     def moveAllDirections(self):
         # The outer circle doesnt touch the left side, increment in x coordinate
-        self.check.moveLeft()
+        self.moveLeft()
         # Only to the right of the screen, decrement in x coordinate
-        self.check.moveRight()
+        self.moveRight()
         # If below the scoreboard, increment in y coordinate
-        self.check.moveUp()
+        self.moveUp()
         # if down arrow key is pressed, decrement in y coordinate
-        self.check.moveDown()
+        self.moveDown()
+
+
+class CheckBallMovement(CheckMovement):
+    def __int__(self):
+        spacing = 50
+        self.insideGoal: bool = self.position[1] in range(half_screen - spacing, half_screen + spacing)
+
+    def moveLeft(self):
+        return self.isLeftBound() and self.insideGoal
+
+    def moveRight(self):
+        return self.isRightBound() and self.insideGoal

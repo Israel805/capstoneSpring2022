@@ -1,3 +1,4 @@
+import sys
 from random import random
 
 import numpy as np
@@ -244,15 +245,13 @@ def MainFunction():
         vel = vel * 1.25
 
     # Controller for player 1
-    left_team.user.moveAllDirections()
+    #left_team.user.moveAllDirections()
 
     # Controller for player 2
-    right_team.user.moveAllDirections()
+    #right_team.user.moveAllDirections()
 
     # Check if the ball is in the goal
     [goal_posts[x].isScored() for x in range(len(goal_posts))]
-
-    ball.velocity = np.array([random() - 0.5, random() - 0.5])
 
     brain = Brain(left_team, right_team, ball)
     brain.run_brains()
@@ -269,6 +268,9 @@ def MainFunction():
 def MainGame():
     global left_team, right_team, counter
     while True:
+
+        # Creates a game tactic where the AI can play with
+        left_team.brain = right_team.brain = DefendersAndAttackers(ball)
 
         # Handling input
         for event in pygame.event.get():
@@ -309,8 +311,7 @@ def initializeTeams(player1_color, player2_color, ball_color, time_option):
     ball.color = ball_color
     counter = time_option
 
-    # Creates a game tactic where the AI can play with
-    left_team.brain = right_team.brain = DefendersAndAttackers(ball)
+    ball.velocity = np.array([random() - 0.5, random() - 0.5])
 
 
 def Main(colors: list, ball_color, time_option):
