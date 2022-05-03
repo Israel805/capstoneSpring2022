@@ -1,4 +1,3 @@
-from Playground import *
 from Constant import *
 from abstractbrain import *
 from physics import Circle
@@ -17,7 +16,7 @@ class Team:
                         for soccer_player in self.side]
         # Gets the correct circle and controls from the team side chosen
         num = {Teams.TEAM_ONE: p1_num, Teams.TEAM_TWO: p2_num}.get(self.team_number)
-        self.user = User(self.team_number, self.players[num])
+        self.user = User(self.team_number, self.players[num], player_color)
 
         # Removes the user from the player list
         self.players.remove(self.players[num])
@@ -100,8 +99,9 @@ class CheckUsersMovement(CheckMovement):
 
 
 class User(CheckUsersMovement, Player):
-    def __init__(self, team, player):
+    def __init__(self, team, player, user_color):
         super().__init__(team, player)
+        self.color = user_color
 
     def moveAllDirections(self):
         # The outer circle doesnt touch the left side, increment in x coordinate
