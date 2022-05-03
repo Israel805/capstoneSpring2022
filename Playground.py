@@ -47,6 +47,7 @@ class GoalPost:
     def insideGoal(self):
         return self.object.top < ball.position[1] < self.object.bottom
 
+    # TODO FIX Goal Score
     def isScored(self):
 
         def resetAllPositions():
@@ -58,16 +59,17 @@ class GoalPost:
                 team.resetPosition()
                 team.setState(SoccerTeamPlayers.States.WAITING)
 
-        # if self.object.collidepoint(ball.position):
-        x, y = ball.position
-        if (x < sides[0] or x > screen_width - sides[0]) and self.insideGoal():
+        if self.object.collidepoint(ball.position):
+            # x, y = ball.position
+            # if (x < sides[0] or x > screen_width - sides[0]) and self.insideGoal():
             score[self.goal_number] += 1
             resetAllPositions()
 
 
 # ! Draws the goal post on both sides on the field
-goal_posts = [GoalPost((goal_xpos * .2, goal_ypos), WHITE, 0), GoalPost((screen_width -
-                                                                         (goal_xpos * .8) - 3, goal_ypos), WHITE, 1)]
+goal_posts = [GoalPost((goal_xpos * .2, goal_ypos), WHITE, 0),
+              GoalPost((screen_width - (goal_xpos * .8) - 3, goal_ypos), WHITE, 1)]
+
 # The primary ball to score on
 ball = Ball(half_screen, RED, ball_size)
 
@@ -132,16 +134,15 @@ def Layout():
         screen.blit(default_label("Time: " + mins + ":" + sec), (50, 20))
 
     def displayGoalSides():
-        # Appends the walls from both ends
 
         # Draws the lines parallel to the goal
         goal_line_vert, shift = 20, 8
         goal_side1, goal_side2 = [goal_line_vert - shift, line_pos], [goal_line_vert - shift, screen_width]
-        walls.append(pygame.draw.aaline(screen, WHITE, goal_side1, goal_side2))
+        pygame.draw.aaline(screen, WHITE, goal_side1, goal_side2)
 
         # Makes the first element in each list the inverse of the whole screen width
         goal_side1[0] = goal_side2[0] = screen_width - goal_line_vert + shift
-        walls.append(pygame.draw.aaline(screen, WHITE, goal_side1, goal_side2))
+        pygame.draw.aaline(screen, WHITE, goal_side1, goal_side2)
 
     def displayField():
         # Draws a vertical line in the middle of the screen
@@ -149,11 +150,10 @@ def Layout():
 
         # Draws a horizontal line in the middle (top) of the screen
         start_pos, end_pos = [0, line_pos], [screen_width, line_pos]
-        new_wall = pygame.draw.aaline(screen, WHITE, start_pos, end_pos)
-        walls.append(new_wall)
+        pygame.draw.aaline(screen, WHITE, start_pos, end_pos)
+
         start_pos[1] = end_pos[1] = screen_height
-        new_wall = pygame.draw.aaline(screen, WHITE, start_pos, end_pos)
-        walls.append(new_wall)
+        pygame.draw.aaline(screen, WHITE, start_pos, end_pos)
 
         # Draws the circle of the field
         Circle(half_screen, WHITE, 200).draw(3)
@@ -233,6 +233,10 @@ def getAllCircles():
     circles = []
     for player_side in [left_team.players, right_team.players]:
         [circles.append(player) for player in player_side]
+
+    # Adds the users to the update
+    [circles.append(users) for users in [left_team.user, right_team.user]]
+
     circles.append(ball)
     return circles
 
@@ -245,24 +249,18 @@ def MainFunction():
         vel = vel * 1.25
 
     # Controller for player 1
-    #left_team.user.moveAllDirections()
+    left_team.user.moveAllDirections()
 
     # Controller for player 2
-    #right_team.user.moveAllDirections()
+    right_team.user.moveAllDirections()
 
     # Check if the ball is in the goal
     [goal_posts[x].isScored() for x in range(len(goal_posts))]
-
-    brain = Brain(left_team, right_team, ball)
-    brain.run_brains()
-    brain.limit_velocities()
-    updates(getAllCircles())
-
-    # # Calculates collision for player 1 and the ball
-    left_team.user.calculate_collision(ball)
     #
-    # # Calculates collision for player 2 and the ball
-    right_team.user.calculate_collision(ball)
+    # brain = Brain(left_team, right_team, ball)
+    # brain.run_brains()
+    # brain.limit_velocities()
+    updates(getAllCircles())
 
 
 def MainGame():
@@ -299,21 +297,23 @@ def MainGame():
         clock.tick(60)
 
 
-def initializeTeams(player1_color, player2_color, ball_color, time_option):
+def initializeGame(player1_color, player2_color, ball_color, time_option):
     global left_team, right_team, ball, counter
     # ! Creates the players on the screen
     # Displays the players on the screen for Both Side
+
     # Saves and displays the players on both sides
     teams = SoccerTeamPlayers.Teams
     left_team = SoccerTeamPlayers.Team(teams.TEAM_ONE, player1_color)
     right_team = SoccerTeamPlayers.Team(teams.TEAM_TWO, player2_color)
 
-    ball.color = ball_color
-    counter = time_option
+    # Saves the color of the ball and the time clock
+    ball.color, counter = ball_color, time_option
 
+    # Initialize the ball to move slightly
     ball.velocity = np.array([random() - 0.5, random() - 0.5])
 
 
 def Main(colors: list, ball_color, time_option):
-    initializeTeams(colors[0], colors[1], ball_color, time_option)
+    initializeGame(colors[0], colors[1], ball_color, time_option)
     MainGame()

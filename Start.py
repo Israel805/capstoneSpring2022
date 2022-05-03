@@ -5,9 +5,10 @@ from Playground import Main
 from physics import Circle
 
 # Creates both circles for the intro, the initial choice
-player1 = Circle((half_width * .35, screen_height * .6), WHITE)
-player2 = Circle((screen_width * .8, screen_height * .6), GREEN)
-ball = Circle(half_screen, RED, ball_size)
+height = screen_height * .6
+player1, player2 = Circle((half_width * .35, height), WHITE), Circle((screen_width * .8, height), GREEN)
+ball = Circle(half_screen, RED)
+
 
 ''' Start of Display Functions '''
 
@@ -112,7 +113,6 @@ def CountDownPage():
     countDown = 3
     # Starts a count down from 3 to start the game (starts at 'GO')
     while True:
-
         for event in pygame.event.get():
             if event.type == pygame.USEREVENT:
                 countDown -= 1
@@ -149,10 +149,9 @@ def StartPage():
         # Only if ball is not the player's colors or player1 color is player2 color
         both_playr_colors = [player1.color, player2.color]
         if isPressed(play_button):
-            if player1.color is not player2.color:
-                if ball.color not in both_playr_colors:
-                    CountDownPage()
-                    Main(both_playr_colors, ball.color, counter)
+            if player1.color is not player2.color and  ball.color not in both_playr_colors:
+                CountDownPage()
+                Main(both_playr_colors, ball.color, counter)
         warning()
 
         startPageDisplay()

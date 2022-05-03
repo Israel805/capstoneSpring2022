@@ -1,5 +1,7 @@
 from random import shuffle
 import numpy as np
+
+import SoccerTeamPlayers
 from Constant import *
 
 ticks: int = 0
@@ -92,7 +94,8 @@ def updates(list_input: list):
                 new_body = new_body.calculate_collision(b2)
         new_body.bounce_wall()
         new_bodies.append(new_body)
-        new_body.move()
+        if type(new_body) is not SoccerTeamPlayers.User:
+            new_body.move()
 
     for i in range(len(list_input)):
         list_input[i].set_pos_vel(new_bodies[i])

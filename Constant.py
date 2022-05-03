@@ -52,18 +52,17 @@ def isPressed(obj):
 
 
 # AI Variables
-friction = -0.015
+friction = -0.05
 
-# left_region = 75, Playground.half_width
-# right_region = Playground.half_width, Playground.screen_width - 75
 
 ''' Global Variables '''
 receiving = closestToTheBALL = None
-max_ball_velocity = interceptionRange = 10
+max_ball_velocity = 8
 NUM_PLAYERS = 6
 p1_num = p2_num = 0
 sides = 20, 75
-max_player_velocity = vel = 5
+vel = 5
+max_player_velocity = max_ball_velocity // 2
 
 ''' Main Start of Pygame '''
 # Creates a new pygame
@@ -74,7 +73,6 @@ clock = pygame.time.Clock()
 pygame.time.set_timer(pygame.USEREVENT, 1000)
 
 left_team = right_team = 0
-walls = []
 flags = DOUBLEBUF
 # ! Setting up the main window
 screen = pygame.display.set_mode((screen_width, screen_height), flags, 16)

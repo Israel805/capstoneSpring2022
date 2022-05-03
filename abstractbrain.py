@@ -4,8 +4,7 @@ import numpy as np
 
 
 class AbstractBrain(ABC):
-    def __init__(self, name=None):
-        self.name = type(self).__name__ if name is None else name
+    def __init__(self):
         self.my_players_pos = self.my_players_vel = None
         self.opp_players_pos = self.opp_players_pos = None
         self.ball_pos = self.ball_vel = self.my_score = None

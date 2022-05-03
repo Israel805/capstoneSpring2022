@@ -1,3 +1,5 @@
+import numpy as np
+
 from Constant import *
 from abstractbrain import *
 from physics import Circle
@@ -12,8 +14,8 @@ class Team:
 
         # Adds to the list the new player, gets the initial value of the player
         # Uses same size, color and its specific position
-        self.players = [Player(self.team_number, soccer_player.value, player_color)
-                        for soccer_player in self.side]
+        self.players = [Player(self.team_number, soccer_player.value, player_color) for soccer_player in self.side]
+
         # Gets the correct circle and controls from the team side chosen
         num = {Teams.TEAM_ONE: p1_num, Teams.TEAM_TWO: p2_num}.get(self.team_number)
         self.user = User(self.team_number, self.players[num], player_color)
@@ -78,24 +80,24 @@ class CheckMovement:
 class CheckUsersMovement(CheckMovement):
     def __init__(self, team, player):
         super().__init__(player.position, player.size)
-        self.keys, self.velocity = pygame.key.get_pressed(), vel
+        self.velocity = [vel, vel]
         self.player_key = player_control.get(team)
 
     def moveLeft(self):
-        if self.keys[self.player_key[0]] and self.isLeftBound():
-            self.position[0] -= self.velocity
+        if pygame.key.get_pressed()[self.player_key[0]] and self.isLeftBound():
+            self.position[0] -= vel
 
     def moveRight(self):
-        if self.keys[self.player_key[1]] and self.isRightBound():
-            self.position[0] += self.velocity
+        if pygame.key.get_pressed()[self.player_key[1]] and self.isRightBound():
+            self.position[0] += vel
 
     def moveUp(self):
-        if self.keys[self.player_key[2]] and self.isUpperBound():
-            self.position[1] -= self.velocity
+        if pygame.key.get_pressed()[self.player_key[2]] and self.isUpperBound():
+            self.position[1] -= vel
 
     def moveDown(self):
-        if self.keys[self.player_key[3]] and self.isLowerBound():
-            self.position[1] += self.velocity
+        if pygame.key.get_pressed()[self.player_key[3]] and self.isLowerBound():
+            self.position[1] += vel
 
 
 class User(CheckUsersMovement, Player):
@@ -112,6 +114,12 @@ class User(CheckUsersMovement, Player):
         self.moveUp()
         # if down arrow key is pressed, decrement in y coordinate
         self.moveDown()
+
+        # self.move()
+        #
+        # self.velocity[0] -= friction if self.velocity[0] > 0 else 0
+        # self.velocity[1] -= friction if self.velocity[1] > 0 else 0
+
 
 
 class CheckBallMovement(CheckMovement):
