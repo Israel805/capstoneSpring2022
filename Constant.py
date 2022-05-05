@@ -104,21 +104,12 @@ class FieldSide(Enum):
 
 w, h = half_screen
 
+StartPositionRight = [[w * 1.4, h], [w * 1.7, h * .4], [w * 1.9, h],
+                      [w * 1.6, h * .8], [w * 1.6, h * 1.5], [w * 1.9, h * .5], [w * 1.8, h * .8]]
 
-class StartPositionRight(Enum):
-    # Initial position for right side team
-    FORWARD = (w * 1.4, h)
-    MIDDLE, MIDDLE_BACK = (w * 1.7, h * .4), (w * 1.9, h)
-    SIDE_LEFT, SIDE_RIGHT = (w * 1.6, h * .8), (w * 1.6, h * 1.5)
-    BACK_LEFT, BACK_RIGHT = (w * 1.9, h * .5), (w * 1.8, h * .8)
-
-
-class StartPositionLeft(Enum):
-    # Initial position for left side team
-    FORWARD = (w * .6, h)
-    MIDDLE, MIDDLE_BACK = (w * .5, h * 1.25), (w * .5, h * .75)
-    SIDE_LEFT, SIDE_RIGHT = (w * .5, h), (w * .4, h * 1.6)
-    BACK_LEFT, BACK_RIGHT = (w * .2, h * .6), (w * .2, h * 1.2)
+# Initial position for left side team
+StartPositionLeft = [[w * .6, h], [w * .5, h * 1.25],[w * .5, h * .75],[w * .5, h],[w * .4, h * 1.6],
+                     [w * .2, h * .6],[w * .2, h * 1.2]]
 
 
 ''' Team-Based Selection Variables '''

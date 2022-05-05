@@ -45,27 +45,23 @@ class GoalPost:
         pygame.draw.rect(screen, self.color, self.object)
 
     def insideGoal(self):
+        global ball
         return self.object.top < ball.position[1] < self.object.bottom
 
     # TODO FIX Goal Score
     def isScored(self):
+        global left_team, right_team, ball
 
-        def resetAllPositions():
-            global left_team, right_team
+        x, y = ball.position
+        if self.insideGoal() and (x < sides[0] + 20 or x > screen_width - sides[0] - 20):
+            score[self.goal_number] += 1
             ball.placeAndRestBall([half_width, half_height])
 
             # Goes though each team and player to return to their original position
             for team in [left_team, right_team]:
                 team.resetPosition()
-                team.setState(SoccerTeamPlayers.States.WAITING)
-
-        if self.object.collidepoint(ball.position):
-            # x, y = ball.position
-            # if (x < sides[0] or x > screen_width - sides[0]) and self.insideGoal():
-            score[self.goal_number] += 1
-            resetAllPositions()
-
-
+            return True
+        return False
 # ! Draws the goal post on both sides on the field
 goal_posts = [GoalPost((goal_xpos * .2, goal_ypos), WHITE, 0),
               GoalPost((screen_width - (goal_xpos * .8) - 3, goal_ypos), WHITE, 1)]
@@ -251,15 +247,17 @@ def MainFunction():
     # Controller for player 1
     left_team.user.moveAllDirections()
 
-    # Controller for player 2
+    # Controller for player 2x
     right_team.user.moveAllDirections()
 
     # Check if the ball is in the goal
-    [goal_posts[x].isScored() for x in range(len(goal_posts))]
-    #
-    # brain = Brain(left_team, right_team, ball)
-    # brain.run_brains()
-    # brain.limit_velocities()
+    for x in range(len(goal_posts)):
+        if goal_posts[x].isScored():
+            return
+
+    brain = Brain(left_team, right_team, ball)
+    brain.run_brains()
+    brain.limit_velocities()
     updates(getAllCircles())
 
 

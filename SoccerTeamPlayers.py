@@ -1,5 +1,3 @@
-import numpy as np
-
 from Constant import *
 from abstractbrain import *
 from physics import Circle
@@ -14,14 +12,17 @@ class Team:
 
         # Adds to the list the new player, gets the initial value of the player
         # Uses same size, color and its specific position
-        self.players = [Player(self.team_number, soccer_player.value, player_color) for soccer_player in self.side]
+        self.players = [Player(self.team_number, soccer_player, player_color) for soccer_player in self.side]
 
         # Gets the correct circle and controls from the team side chosen
         num = {Teams.TEAM_ONE: p1_num, Teams.TEAM_TWO: p2_num}.get(self.team_number)
         self.user = User(self.team_number, self.players[num], player_color)
 
+        self.user_position = self.players[num].position
+
         # Removes the user from the player list
         self.players.remove(self.players[num])
+        self.side.remove(self.side[num])
 
     def applyMoveToAllPlayers(self, move: np.array):
         self.brain.last_move = []
@@ -30,8 +31,12 @@ class Team:
             self.brain.last_move.append(normal_move)
 
     def resetPosition(self):
-        for index in range(len(self.side)):
-            self.players[index].position, self.players[index].velocity = list(self.side[index].value), [0, 0]
+        index = 0
+        for position in self.side:
+            self.players[index].position= position
+            index += 1
+        # Reset user's positions
+        self.user.position = self.user_position
 
     def positionMatrix(self):  # creates a matrix of players positions
         return np.array([p.position for p in self.players])
@@ -44,13 +49,6 @@ class Player(Circle):
     def __init__(self, team, position: list, p_color):
         super().__init__(position, p_color)
         self.team = team
-        self.distanceToBall, self.closePlayers = -1, []
-
-    def setDistanceToBall(self, new_distance):
-        self.distanceToBall = new_distance
-
-    def addClosePlayer(self, player):
-        self.closePlayers.append(player)
 
     def apply_move(self, move: np.array):
         norm = np.linalg.norm(move)
@@ -114,21 +112,3 @@ class User(CheckUsersMovement, Player):
         self.moveUp()
         # if down arrow key is pressed, decrement in y coordinate
         self.moveDown()
-
-        # self.move()
-        #
-        # self.velocity[0] -= friction if self.velocity[0] > 0 else 0
-        # self.velocity[1] -= friction if self.velocity[1] > 0 else 0
-
-
-
-class CheckBallMovement(CheckMovement):
-    def __int__(self):
-        spacing = 50
-        self.insideGoal: bool = self.position[1] in range(half_screen - spacing, half_screen + spacing)
-
-    def moveLeft(self):
-        return self.isLeftBound() and self.insideGoal
-
-    def moveRight(self):
-        return self.isRightBound() and self.insideGoal
