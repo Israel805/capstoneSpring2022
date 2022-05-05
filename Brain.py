@@ -52,7 +52,6 @@ class Brain:
     def run_brains(self):
         p1_pos, p1_vel = self.team_one.positionMatrix(), self.team_one.velocityMatrix()
         p2_pos, p2_vel = self.team_two.positionMatrix(), self.team_two.velocityMatrix()
-
         ball_pos, ball_vel = self.ball.position, self.ball.velocity
 
         game_time = game_time_complete()

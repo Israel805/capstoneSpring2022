@@ -18,7 +18,7 @@ class Ball(Circle):
         super().__init__(position, circle_color, circle_size)
 
     def placeAndRestBall(self, new_position):
-        self.position, self.velocity = new_position, [0, 0]
+        self.position, self.velocity = np.array(new_position), np.array([0,0])
 
     def setHorizontalMovement(self, change):
         self.position[0] += change
@@ -48,7 +48,6 @@ class GoalPost:
         global ball
         return self.object.top < ball.position[1] < self.object.bottom
 
-    # TODO FIX Goal Score
     def isScored(self):
         global left_team, right_team, ball
 
@@ -60,8 +59,13 @@ class GoalPost:
             # Goes though each team and player to return to their original position
             for team in [left_team, right_team]:
                 team.resetPosition()
+
+                # Initialize the ball to move slightly
+                ball.velocity = np.array([random() - 0.5, random() - 0.5])
             return True
         return False
+
+
 # ! Draws the goal post on both sides on the field
 goal_posts = [GoalPost((goal_xpos * .2, goal_ypos), WHITE, 0),
               GoalPost((screen_width - (goal_xpos * .8) - 3, goal_ypos), WHITE, 1)]
@@ -258,6 +262,7 @@ def MainFunction():
     brain = Brain(left_team, right_team, ball)
     brain.run_brains()
     brain.limit_velocities()
+
     updates(getAllCircles())
 
 
@@ -282,7 +287,7 @@ def MainGame():
         if counter == 0:
             screen.fill(PAGE_COLOR)  # Clears the screen
             screen.blit(default_label("GAME OVER!", 100), half_screen)
-            # GameResult() # not working
+            GameResult()  # not working
             return
 
         # Visuals

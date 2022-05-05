@@ -33,7 +33,7 @@ class Team:
     def resetPosition(self):
         index = 0
         for position in self.side:
-            self.players[index].position= position
+            self.players[index].position = np.array(position)
             index += 1
         # Reset user's positions
         self.user.position = self.user_position
