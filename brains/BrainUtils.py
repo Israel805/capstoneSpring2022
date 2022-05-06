@@ -6,7 +6,7 @@ def run_back():
     return [-1, 0]
 
 
-class BaseBrainUtils(AbstractBrain, ABC):
+class BrainUtils(AbstractBrain, ABC):
     def __init__(self, ball):
         super().__init__()
         self.ball = ball

@@ -1,9 +1,9 @@
 from random import random
 
-from brains.BaseBrainUtils import *
+from brains.BrainUtils import *
 
 
-class DefendersAndAttackers(BaseBrainUtils):
+class DefendersAndAttackers(BrainUtils):
     BASE_POS = [[100., 200.], [180., 600.], [300., 300.], [300., 500.]]
 
     def do_move(self) -> np.array:

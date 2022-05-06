@@ -72,17 +72,23 @@ class Circle:
     # Calculates the collision (uses detect_collision)
     def calculate_collision(self, thing2):
         thing1 = copy.deepcopy(self)
+
+        # if no collision is detected
         if not thing1.detect_collision(thing2):
             return thing1
 
+        # Saves information about both objets
         pos1, pos2 = thing1.position, thing2.position
         vel1, vel2 = thing1.velocity, thing2.velocity
         mass1, mass2 = thing1.size ** 2, thing2.size ** 2
 
+        # Subtracts both the velocity and the positions of both players
         posDiff, velDiff = np.subtract(pos1, pos2), np.subtract(vel1, vel2)
 
+        # Creates the dot product of the difference in position and velocity
         dot_product = np.dot(velDiff, posDiff)
-        norm_squared = np.inner(posDiff, posDiff)
+        norm_squared = np.inner(posDiff, posDiff) # normalizes the position difference
 
+        # Sets the new velocity
         thing1.velocity = vel1 - (2 * mass2 / (mass1 + mass2)) * (dot_product / norm_squared * posDiff)
         return thing1

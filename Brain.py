@@ -50,35 +50,45 @@ class Brain:
         self.ball = ball
 
     def run_brains(self):
+        # Collects all the positions and velocities of each player for each team
         p1_pos, p1_vel = self.team_one.positionMatrix(), self.team_one.velocityMatrix()
         p2_pos, p2_vel = self.team_two.positionMatrix(), self.team_two.velocityMatrix()
+
+        # Saves the ball velocity and position
         ball_pos, ball_vel = self.ball.position, self.ball.velocity
 
         game_time = game_time_complete()
 
+        # Saves the brain of both teams
         t1_brain, t2_brain = self.team_one.brain, self.team_two.brain
 
+        # Makes the move according to the brain with all the information saved
         t1_move = t1_brain.move(p1_pos, p1_vel, p2_pos, p2_vel, ball_pos, ball_vel, score[0], score[1], game_time)
+
+        # Applies the move to team one
         self.team_one.applyMoveToAllPlayers(t1_move)
 
-        # Translate team's 2 positions and velocities so that both brains think that they are playing from left (0,
-        # y) to right (MAX_X,y)
+        # Translate team's 2 positions and velocities so that both brains
+        # think that they are playing from left (0, y) to right (MAX_X,y)
         t2_move = t2_brain.move(flip_pos(p2_pos), flip_vel(p2_vel), flip_pos(p1_pos), flip_vel(p1_vel),
                                 flip_pos(ball_pos), flip_vel(ball_vel), score[1], score[0], game_time)
         t2_move = flip_acc(t2_move)
+
+        # Applies the move to team one
         self.team_two.applyMoveToAllPlayers(t2_move)
 
     def limit_velocities(self):
-        ball_velocity = self.ball.normal_velocity()
+        def checkVelocity(obj, num: int):
+            max_vel = [max_ball_velocity, max_player_velocity]
+            obj_vel = obj.normal_velocity()
+            if obj_vel > max_vel[num]:
+                obj.velocity = np.multiply(obj.velocity, max_vel[num] / obj_vel)
 
-        if ball_velocity > max_ball_velocity:
-            self.ball.velocity = np.multiply(self.ball.velocity, max_ball_velocity / ball_velocity)
+        checkVelocity(self.ball, 0)
 
+        # Checks if the player velocity is over the max velocity
         for t in [self.team_one, self.team_two]:
-            for p in t.players:
-                player_velocity = p.normal_velocity()
-                if player_velocity > max_player_velocity:
-                    p.velocity = np.multiply(p.velocity, max_player_velocity / player_velocity)
+            [checkVelocity(p, 1) for p in t.players]
 
 
 def updates(list_input: list):
