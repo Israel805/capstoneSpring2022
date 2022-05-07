@@ -5,14 +5,13 @@ from physics import Circle
 
 class Team:
     def __init__(self, team_num: Teams, player_color):
-        self.team_number = Teams(team_num)
+        self.team_number, self.team_color = team_num, player_color
         self.brain = None
         self.side = starting_position.get(team_num)
-        self.team_color = player_color
 
         # Adds to the list the new player, gets the initial value of the player
         # Uses same size, color and its specific position
-        self.players = [Player(self.team_number, soccer_player, player_color) for soccer_player in self.side]
+        self.players = [Player(soccer_player, player_color) for soccer_player in self.side]
 
         # Gets the correct circle and controls from the team side chosen
         num = {Teams.TEAM_ONE: p1_num, Teams.TEAM_TWO: p2_num}.get(self.team_number)
@@ -31,10 +30,10 @@ class Team:
             self.brain.last_move.append(normal_move)
 
     def resetPosition(self):
-        index = 0
-        for position in self.side:
-            self.players[index].position = np.array(position)
-            index += 1
+        # Resets all players position
+        for index in range(len(self.side)):
+            self.players[index].position = np.array(self.side[index])
+
         # Reset user's positions
         self.user.position = self.user_position
 
@@ -46,9 +45,8 @@ class Team:
 
 
 class Player(Circle):
-    def __init__(self, team, position: list, p_color):
+    def __init__(self, position: list, p_color):
         super().__init__(position, p_color)
-        self.team = team
 
     def apply_move(self, move: np.array):
         norm = np.linalg.norm(move)
@@ -57,7 +55,7 @@ class Player(Circle):
         return normal_move
 
 
-# For player and AI use
+# For player use
 class CheckMovement:
     def __init__(self, position: list, size: int):
         self.position, self.size = position, size
@@ -78,24 +76,24 @@ class CheckMovement:
 class CheckUsersMovement(CheckMovement):
     def __init__(self, team, player):
         super().__init__(player.position, player.size)
-        self.velocity = [vel, vel]
+        self.velocity = [user_velocity, user_velocity]
         self.player_key = player_control.get(team)
 
     def moveLeft(self):
         if pygame.key.get_pressed()[self.player_key[0]] and self.isLeftBound():
-            self.position[0] -= vel
+            self.position[0] -= user_velocity
 
     def moveRight(self):
         if pygame.key.get_pressed()[self.player_key[1]] and self.isRightBound():
-            self.position[0] += vel
+            self.position[0] += user_velocity
 
     def moveUp(self):
         if pygame.key.get_pressed()[self.player_key[2]] and self.isUpperBound():
-            self.position[1] -= vel
+            self.position[1] -= user_velocity
 
     def moveDown(self):
         if pygame.key.get_pressed()[self.player_key[3]] and self.isLowerBound():
-            self.position[1] += vel
+            self.position[1] += user_velocity
 
 
 class User(CheckUsersMovement, Player):

@@ -21,7 +21,7 @@ class CheckAIMovement:
 
 
 class Circle:
-    def __init__(self, position, circle_color, circle_size=player_size):
+    def __init__(self, position: list, circle_color, circle_size: int = player_size):
         self.position = np.array(position)
         self.color, self.size = circle_color, circle_size
         self.velocity = self.acceleration = np.array([0, 0])
@@ -44,7 +44,7 @@ class Circle:
 
     # Checks if circle is hitting the wall and bounce off the wall
     def bounce_wall(self):
-        check = CheckAIMovement(list(self.position), self.size)
+        check = CheckAIMovement(self.position, self.size)
         if check.isLeftBound() and self.velocity[0] < 0:
             self.velocity[0] = -self.velocity[0]
 
@@ -87,7 +87,7 @@ class Circle:
 
         # Creates the dot product of the difference in position and velocity
         dot_product = np.dot(velDiff, posDiff)
-        norm_squared = np.inner(posDiff, posDiff) # normalizes the position difference
+        norm_squared = np.inner(posDiff, posDiff)  # normalizes the position difference
 
         # Sets the new velocity
         thing1.velocity = vel1 - (2 * mass2 / (mass1 + mass2)) * (dot_product / norm_squared * posDiff)

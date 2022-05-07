@@ -6,9 +6,8 @@ from physics import Circle
 
 # Creates both circles for the intro, the initial choice
 height = screen_height * .6
-player1, player2 = Circle((half_width * .35, height), WHITE), Circle((screen_width * .8, height), GREEN)
+player1, player2 = Circle([half_width * .35, height], WHITE), Circle([screen_width * .8, height], GREEN)
 ball = Circle(half_screen, RED)
-
 
 ''' Start of Display Functions '''
 
@@ -28,24 +27,23 @@ def colorOptions(circle, position):
         num += 1
 
 
-def startPageDisplay():
-    def displayInstruct(ctrl, pos):
-        for x in range(len(ctrl)):
-            screen.blit(default_label(ctrl[x] + instr[x]), pos)
-            pos[1] += 30
+def displayBothControls():
+    # for player one instruction position
+    instruct_position = [half_width * .2, half_height * .6]
+    for num in range(len(num_player)):
+        # Creates the player number label
+        screen.blit(default_label(num_player[num]), instruct_position)
+        instruct_position[1] += 30
 
-    def displayBothControls():
-        # for player one instruction position
-        instruct_position = [half_width * .2, half_height * .6]
-        for num in range(len(num_player)):
-            # Creates the player number label
-            screen.blit(default_label(num_player[num]), instruct_position)
+        for x in range(len(controller[num])):
+            screen.blit(default_label(controller[num][x] + instr[x]), instruct_position)
             instruct_position[1] += 30
-            displayInstruct(controller[num], instruct_position)
 
-            # for player two instruction position
-            instruct_position = [half_width * 1.4, half_height * .6]
+        # for player two instruction position
+        instruct_position = [half_width * 1.4, half_height * .6]
 
+
+def startPageDisplay():
     global player1, player2
     screen.fill(PAGE_COLOR)  # Makes background
 
@@ -54,13 +52,13 @@ def startPageDisplay():
 
     # Draws out both p1, p2 and other available options
     player1.draw()
+    player2.draw()
 
     # Displays the coloring options for both players
     for player in [player1, player2]:
         position = [player.position[0] - 70, player.position[1] + 50]
         colorOptions(player, position)
 
-    player2.draw()
     displayBothControls()
 
 
@@ -69,6 +67,7 @@ def timeOption(button_pos):
     # Creates a label for time
     button = [button_pos[0] * 0.85, button_pos[1] * .8]
     screen.blit(default_label("Time: "), button)
+
     # Creates a label for different time options
     button[0] = button_pos[0] + 20
     screen.blit(default_label(str(counter // 60) + " mins"), button)
@@ -76,9 +75,10 @@ def timeOption(button_pos):
 
     option_button = []  # Saves all the rect made
 
-    # Displays each available time to
+    # Displays each available time
     for index in range(len(options)):
-        option_button.append(pygame.Rect(button, [50, 20]))
+        option_button.append(pygame.Rect(button, [50, 20])) # adds to option button
+
         # If clicked on, then it will change the counter to be that time
         if isPressed(option_button[index]):
             new_time = 5 + (index * 5)
@@ -137,6 +137,11 @@ def StartPage():
     button_position = [half_width * .85, screen_height * .8]
     play_button = pygame.Rect(button_position, button_size)
 
+    both_colors = [player1.color, player2.color]
+
+    def noMatchingColors():
+        return player1.color is not both_colors[1] and ball.color not in both_colors
+
     while True:
 
         # Handling input
@@ -147,11 +152,10 @@ def StartPage():
 
         # If clicked on the button, it will start the game
         # Only if ball is not the player's colors or player1 color is player2 color
-        both_playr_colors = [player1.color, player2.color]
-        if isPressed(play_button):
-            if player1.color is not player2.color and  ball.color not in both_playr_colors:
-                CountDownPage()
-                Main(both_playr_colors, ball.color, counter)
+        if isPressed(play_button) and noMatchingColors():
+            CountDownPage()
+            Main(both_colors, ball.color, counter)
+
         warning()
 
         startPageDisplay()

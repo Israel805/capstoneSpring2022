@@ -1,67 +1,56 @@
-import sys
 from random import random
 
 import numpy as np
 from pygame import *
 
 # General setup
-import SoccerTeamPlayers
+from SoccerTeamPlayers import Team
 from Brain import Brain, updates
 from Constant import *
 from brains.DefendersAndAttackers import DefendersAndAttackers
-# Draws a circle on the screen
 from physics import Circle
 
 
 class Ball(Circle):
-    def __init__(self, position, circle_color, circle_size):
-        super().__init__(position, circle_color, circle_size)
+    def __init__(self, position: list, circle_color):
+        super().__init__(position, circle_color, ball_size)
 
-    def placeAndRestBall(self, new_position):
-        self.position, self.velocity = np.array(new_position), np.array([0,0])
+    def rest(self):  # resets the ball to the original position (center of the screen)
+        self.position, self.velocity = np.array(half_screen), np.array([0, 0])
 
-    def setHorizontalMovement(self, change):
-        self.position[0] += change
-
-    def setVerticalMovement(self, change):
-        self.position[1] += change
+    def initialize(self):  # Initialize the ball to move slightly
+        self.velocity = np.array([random() - 0.5, random() - 0.5])
 
 
 class GoalPost:
-    def __init__(self, goal_line, circle_color, number):
+    def __init__(self, goal_line: tuple, circle_color, number: int):
+        # Assigns the color, and the team associated to the goal
         self.color, self.goal_number = circle_color, number
-        self.object = pygame.Rect(list(goal_line), goal_size)
 
-    def getGoalCenter(self):
-        return self.object.center
+        # Creates the Rectangle object
+        self.object = pygame.Rect(goal_line, goal_size)
 
-    def getLeftSide(self):
-        return self.object.top if bool(self.goal_number) else self.object.bottom
-
-    def getRightSide(self):
-        return self.object.top if not bool(self.goal_number) else self.object.bottom
-
-    def draw(self):
+    def draw(self):  # Draws a rectangle
         pygame.draw.rect(screen, self.color, self.object)
-
-    def insideGoal(self):
-        global ball
-        return self.object.top < ball.position[1] < self.object.bottom
 
     def isScored(self):
         global left_team, right_team, ball
-
         x, y = ball.position
-        if self.insideGoal() and (x < sides[0] + 20 or x > screen_width - sides[0] - 20):
+
+        def insideGoal():
+            return self.object.top < y < self.object.bottom
+
+        # Checks if the x, y positions are within the goal
+        if insideGoal() and (x < sides[0] + 20 or x > screen_width - sides[0] - 20):
+            # Increments the score
             score[self.goal_number] += 1
-            ball.placeAndRestBall([half_width, half_height])
+            ball.rest()  # Resets the ball position
 
             # Goes though each team and player to return to their original position
-            for team in [left_team, right_team]:
-                team.resetPosition()
+            [team.resetPosition() for team in [left_team, right_team]]
 
-                # Initialize the ball to move slightly
-                ball.velocity = np.array([random() - 0.5, random() - 0.5])
+            # Initialize the ball to move slightly
+            ball.initialize()
             return True
         return False
 
@@ -71,7 +60,7 @@ goal_posts = [GoalPost((goal_xpos * .2, goal_ypos), WHITE, 0),
               GoalPost((screen_width - (goal_xpos * .8) - 3, goal_ypos), WHITE, 1)]
 
 # The primary ball to score on
-ball = Ball(half_screen, RED, ball_size)
+ball = Ball(half_screen, RED)
 
 ''' Start of Display Functions '''
 
@@ -111,9 +100,9 @@ def Layout():
         [goal.draw() for goal in goal_posts]
 
         # Draws each player on both teams
-        for player_side in [left_team.players, right_team.players]:
-            [player.draw() for player in player_side]
+        [[player.draw() for player in player_side] for player_side in [left_team.players, right_team.players]]
 
+        # Draws the user on both teams
         [user_side.draw() for user_side in [left_team.user, right_team.user]]
 
     def displayScore():
@@ -128,13 +117,12 @@ def Layout():
             index += 1
 
     def displayTime():
-        # Displays the time for the Game
+        # Displays the time for the Game, in minutes and seconds
         mins, sec = str(counter // 60), counter % 60
         sec = ('0' if sec < 10 else '') + str(sec)
         screen.blit(default_label("Time: " + mins + ":" + sec), (50, 20))
 
     def displayGoalSides():
-
         # Draws the lines parallel to the goal
         goal_line_vert, shift = 20, 8
         goal_side1, goal_side2 = [goal_line_vert - shift, line_pos], [goal_line_vert - shift, screen_width]
@@ -170,8 +158,6 @@ def Layout():
     ball.draw()
 
 
-''' End of all display functions '''
-
 ''' All Page Functions'''
 
 
@@ -198,51 +184,28 @@ def GameResult():
 ''' End of All Page Functions'''
 
 
-def playerContact(circle_player):
-    # Distance of the centers, radius of both circles
-    return distance(circle_player, ball) <= ball_size * 2
-
-
-# Mode where ball would move if only touched by a player
-def touchBallMode():
-    def getHit(circle_player):
-        # If any player collides with the ball push the ball with its velocity
-        arr = direction(circle_player, ball)
-        for i in range(len(arr)):
-            if arr[i] > 1:
-                arr[i] = 1
-
-            if arr[i] < -1:
-                arr[i] = -1
-
-        return [vel * arr[x] for x in range(len(arr))] if playerContact(circle_player) else [0, 0]
-
-    for player_side in [left_team.players, right_team.players]:
-        for player in player_side:
-            a, b = getHit(player)  # Checks if in bounds for both x, y coordinates for both teams
-            check = SoccerTeamPlayers.CheckMovement(player.position, player_size)
-            checkLeft, checkRight = check.isLeftBound(), check.isRightBound()
-            checkUp, checkDown = check.isUpperBound(), check.isLowerBound()
-
-            # if it hits the outer bounds it will stop from moving after it hits the bounds
-            ball.setHorizontalMovement(a * (-1 if not (checkLeft and checkRight) else 1))
-            ball.setVerticalMovement(b * (-1 if not (checkUp and checkRight) else 1))
-
-
 def getAllCircles():
     circles = []
-    for player_side in [left_team.players, right_team.players]:
-        [circles.append(player) for player in player_side]
+    # Collects all the players on both teams, adds to the list
+    [[circles.append(player) for player in player_side] for player_side in [left_team.players, right_team.players]]
 
     # Adds the users to the update
     [circles.append(users) for users in [left_team.user, right_team.user]]
 
+    # Finally adds the ball to the list at the end
     circles.append(ball)
     return circles
 
 
+def AIController():
+    global left_team, right_team
+    brain = Brain(left_team, right_team, ball)
+    brain.run_brains()
+    brain.limit_velocities()
+
+
 def MainFunction():
-    global ball, vel
+    global left_team, right_team, vel
 
     # Creates a boost for the each player's velocity
     if pygame.key.get_pressed()[K_COLON] or pygame.key.get_pressed()[K_q]:
@@ -251,7 +214,7 @@ def MainFunction():
     # Controller for player 1
     left_team.user.moveAllDirections()
 
-    # Controller for player 2x
+    # Controller for player 2
     right_team.user.moveAllDirections()
 
     # Check if the ball is in the goal
@@ -259,9 +222,7 @@ def MainFunction():
         if goal_posts[x].isScored():
             return
 
-    brain = Brain(left_team, right_team, ball)
-    brain.run_brains()
-    brain.limit_velocities()
+    AIController()
 
     updates(getAllCircles())
 
@@ -269,9 +230,6 @@ def MainFunction():
 def MainGame():
     global left_team, right_team, counter
     while True:
-
-        # Creates a game tactic where the AI can play with
-        left_team.brain = right_team.brain = DefendersAndAttackers(ball)
 
         # Handling input
         for event in pygame.event.get():
@@ -306,15 +264,16 @@ def initializeGame(player1_color, player2_color, ball_color, time_option):
     # Displays the players on the screen for Both Side
 
     # Saves and displays the players on both sides
-    teams = SoccerTeamPlayers.Teams
-    left_team = SoccerTeamPlayers.Team(teams.TEAM_ONE, player1_color)
-    right_team = SoccerTeamPlayers.Team(teams.TEAM_TWO, player2_color)
+    left_team = Team(Teams.TEAM_ONE, player1_color)
+    right_team = Team(Teams.TEAM_TWO, player2_color)
+
+    # Creates a game tactic where the AI can play with
+    left_team.brain = right_team.brain = DefendersAndAttackers(ball)
 
     # Saves the color of the ball and the time clock
     ball.color, counter = ball_color, time_option
 
-    # Initialize the ball to move slightly
-    ball.velocity = np.array([random() - 0.5, random() - 0.5])
+    ball.initialize()
 
 
 def Main(colors: list, ball_color, time_option):

@@ -39,7 +39,6 @@ GREEN = (0, 255, 0)
 ALL_COLORS = [LIGHT_GREY, RED, GREEN, YELLOW, BLUE, WHITE, BLACK]
 
 
-# Display function
 # Creates a label with default font or custom size
 def default_label(string, font_size=30, font_color=WHITE):
     default_font = pygame.font.SysFont("Comic Sans MS", int(font_size))
@@ -54,14 +53,11 @@ def isPressed(obj):
 # AI Variables
 friction = -0.05
 
-
 ''' Global Variables '''
-receiving = closestToTheBALL = None
-max_ball_velocity = 8
 NUM_PLAYERS = 6
 p1_num = p2_num = 0
 sides = 20, 75
-vel = 5
+max_ball_velocity, user_velocity = 8, 5
 max_player_velocity = max_ball_velocity // 2
 
 ''' Main Start of Pygame '''
@@ -88,29 +84,14 @@ class Teams(Enum):
     TEAM_ONE, TEAM_TWO = 0, 1
 
 
-class States(Enum):
-    WAITING, DEFENDING, ATTACKING, ASSISTING = [i for i in range(4)]
-
-
-class TeamPosition(Enum):
-    STRIKER = 0
-    MIDDLE = 1
-    DEFENSE = 2
-
-
-class FieldSide(Enum):
-    LEFT_SIDE, RIGHT_SIDE = 0, 1
-
-
 w, h = half_screen
 
 StartPositionRight = [[w * 1.4, h], [w * 1.7, h * .4], [w * 1.9, h],
                       [w * 1.6, h * .8], [w * 1.6, h * 1.5], [w * 1.9, h * .5], [w * 1.8, h * .8]]
 
 # Initial position for left side team
-StartPositionLeft = [[w * .6, h], [w * .5, h * 1.25],[w * .5, h * .75],[w * .5, h],[w * .4, h * 1.6],
-                     [w * .2, h * .6],[w * .2, h * 1.2]]
-
+StartPositionLeft = [[w * .6, h], [w * .5, h * 1.25], [w * .5, h * .75], [w * .5, h], [w * .4, h * 1.6],
+                     [w * .2, h * .6], [w * .2, h * 1.2]]
 
 ''' Team-Based Selection Variables '''
 player_control = {
@@ -120,8 +101,6 @@ player_control = {
 
 starting_position = {Teams.TEAM_ONE: StartPositionLeft, Teams.TEAM_TWO: StartPositionRight}
 
-
-# actions = {Teams.TEAM_ONE: , Teams.TEAM_TWO: StartPositionRight}
 
 # Function to calculate the distance between two objects
 def distance(obj1, obj2):
