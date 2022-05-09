@@ -245,7 +245,7 @@ def MainGame():
         if counter == 0:
             screen.fill(PAGE_COLOR)  # Clears the screen
             screen.blit(default_label("GAME OVER!", 100), half_screen)
-            GameResult()  # not working
+            # GameResult()  # not working
             return
 
         # Visuals

@@ -137,13 +137,11 @@ def StartPage():
     button_position = [half_width * .85, screen_height * .8]
     play_button = pygame.Rect(button_position, button_size)
 
-    both_colors = [player1.color, player2.color]
-
-    def noMatchingColors():
-        return player1.color is not both_colors[1] and ball.color not in both_colors
-
     while True:
+        both_colors = [player1.color, player2.color]
 
+        def noMatchingColors():
+            return player1.color is not both_colors[1] and ball.color not in both_colors
         # Handling input
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
